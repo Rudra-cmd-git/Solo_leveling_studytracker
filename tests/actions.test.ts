@@ -21,6 +21,11 @@ let dbModule: DatabaseModule;
 let today: string;
 let firstSessionId: number;
 
+async function row<T>(sql: string): Promise<T> {
+  const result = await dbModule.client.execute(sql);
+  return result.rows[0] as unknown as T;
+}
+
 beforeAll(async () => {
   actions = await import("../src/app/actions");
   dbModule = await import("../src/lib/db");
@@ -29,7 +34,7 @@ beforeAll(async () => {
 });
 
 afterAll(() => {
-  dbModule?.sqlite.close();
+  dbModule?.client.close();
   for (const suffix of ["", "-shm", "-wal"]) {
     fs.rmSync(`${databasePath}${suffix}`, { force: true });
   }
@@ -44,12 +49,13 @@ describe("server actions", () => {
     });
 
     expect(result).toEqual({ ok: true });
-    const player = dbModule.sqlite
-      .prepare("SELECT name FROM players WHERE id = 1")
-      .get() as { name: string };
-    const settings = dbModule.sqlite
-      .prepare("SELECT daily_goal_minutes, onboarded FROM settings WHERE id = 1")
-      .get() as { daily_goal_minutes: number; onboarded: number };
+    const player = await row<{ name: string }>(
+      "SELECT name FROM players WHERE id = 1",
+    );
+    const settings = await row<{
+      daily_goal_minutes: number;
+      onboarded: number;
+    }>("SELECT daily_goal_minutes, onboarded FROM settings WHERE id = 1");
 
     expect(player.name).toBe("Rudra");
     expect(settings.daily_goal_minutes).toBe(90);
@@ -82,15 +88,15 @@ describe("server actions", () => {
     const invalidColor = await actions.addSubject("Geography", "red");
     expect(invalidColor.ok).toBe(false);
 
-    const history = dbModule.sqlite
-      .prepare("SELECT id FROM subjects WHERE name = 'History'")
-      .get() as { id: number };
+    const history = await row<{ id: number }>(
+      "SELECT id FROM subjects WHERE name = 'History'",
+    );
     const deleted = await actions.deleteSubject(history.id);
     expect(deleted).toEqual({ ok: true });
 
-    const remaining = dbModule.sqlite
-      .prepare("SELECT COUNT(*) AS count FROM subjects WHERE name = 'History'")
-      .get() as { count: number };
+    const remaining = await row<{ count: number }>(
+      "SELECT COUNT(*) AS count FROM subjects WHERE name = 'History'",
+    );
     expect(remaining.count).toBe(0);
   });
 
@@ -113,13 +119,10 @@ describe("server actions", () => {
       "First Awakening",
     );
 
-    firstSessionId = Number(
-      (
-        dbModule.sqlite
-          .prepare("SELECT id FROM sessions LIMIT 1")
-          .get() as { id: number }
-      ).id,
+    const session = await row<{ id: number }>(
+      "SELECT id FROM sessions LIMIT 1",
     );
+    firstSessionId = Number(session.id);
   });
 
   it("rejects invalid and future sessions", async () => {
@@ -173,18 +176,18 @@ describe("server actions", () => {
   });
 
   it("claims completed quests once and rejects incomplete quests", async () => {
-    const minutesQuest = dbModule.sqlite
-      .prepare("SELECT id FROM quests WHERE code = 'daily_minutes_60'")
-      .get() as { id: number };
-    const sessionsQuest = dbModule.sqlite
-      .prepare("SELECT id FROM quests WHERE code = 'daily_sessions_2'")
-      .get() as { id: number };
-    const reflectionQuest = dbModule.sqlite
-      .prepare("SELECT id FROM quests WHERE code = 'daily_reflection_1'")
-      .get() as { id: number };
-    const weeklyQuest = dbModule.sqlite
-      .prepare("SELECT id FROM quests WHERE code = 'weekly_days_5'")
-      .get() as { id: number };
+    const minutesQuest = await row<{ id: number }>(
+      "SELECT id FROM quests WHERE code = 'daily_minutes_60'",
+    );
+    const sessionsQuest = await row<{ id: number }>(
+      "SELECT id FROM quests WHERE code = 'daily_sessions_2'",
+    );
+    const reflectionQuest = await row<{ id: number }>(
+      "SELECT id FROM quests WHERE code = 'daily_reflection_1'",
+    );
+    const weeklyQuest = await row<{ id: number }>(
+      "SELECT id FROM quests WHERE code = 'weekly_days_5'",
+    );
 
     const minutes = await actions.claimQuest(minutesQuest.id);
     expect(minutes.ok).toBe(true);
@@ -209,9 +212,9 @@ describe("server actions", () => {
     const result = await actions.deleteSubject(1);
     expect(result.ok).toBe(false);
 
-    const subject = dbModule.sqlite
-      .prepare("SELECT id FROM subjects WHERE id = 1")
-      .get() as { id: number };
+    const subject = await row<{ id: number }>(
+      "SELECT id FROM subjects WHERE id = 1",
+    );
     expect(subject.id).toBe(1);
   });
 
@@ -234,15 +237,13 @@ describe("server actions", () => {
     });
     expect(result).toEqual({ ok: true });
 
-    const settings = dbModule.sqlite
-      .prepare(
-        "SELECT daily_goal_minutes, default_timer_minutes, sound_enabled FROM settings WHERE id = 1",
-      )
-      .get() as {
+    const settings = await row<{
       daily_goal_minutes: number;
       default_timer_minutes: number;
       sound_enabled: number;
-    };
+    }>(
+      "SELECT daily_goal_minutes, default_timer_minutes, sound_enabled FROM settings WHERE id = 1",
+    );
     expect(settings.daily_goal_minutes).toBe(120);
     expect(settings.default_timer_minutes).toBe(50);
     expect(settings.sound_enabled).toBe(1);
@@ -252,12 +253,12 @@ describe("server actions", () => {
     const result = await actions.deleteSession(firstSessionId);
     expect(result).toEqual({ ok: true });
 
-    const player = dbModule.sqlite
-      .prepare("SELECT total_xp FROM players WHERE id = 1")
-      .get() as { total_xp: number };
-    const sessions = dbModule.sqlite
-      .prepare("SELECT COUNT(*) AS count FROM sessions")
-      .get() as { count: number };
+    const player = await row<{ total_xp: number }>(
+      "SELECT total_xp FROM players WHERE id = 1",
+    );
+    const sessions = await row<{ count: number }>(
+      "SELECT COUNT(*) AS count FROM sessions",
+    );
 
     expect(player.total_xp).toBe(421);
     expect(sessions.count).toBe(1);
@@ -267,21 +268,21 @@ describe("server actions", () => {
     const result = await actions.resetProgress();
     expect(result).toEqual({ ok: true });
 
-    const player = dbModule.sqlite
-      .prepare("SELECT name, total_xp FROM players WHERE id = 1")
-      .get() as { name: string; total_xp: number };
-    const sessions = dbModule.sqlite
-      .prepare("SELECT COUNT(*) AS count FROM sessions")
-      .get() as { count: number };
-    const claims = dbModule.sqlite
-      .prepare("SELECT COUNT(*) AS count FROM quest_claims")
-      .get() as { count: number };
-    const achievements = dbModule.sqlite
-      .prepare("SELECT COUNT(*) AS count FROM player_achievements")
-      .get() as { count: number };
-    const subjects = dbModule.sqlite
-      .prepare("SELECT COUNT(*) AS count FROM subjects")
-      .get() as { count: number };
+    const player = await row<{ name: string; total_xp: number }>(
+      "SELECT name, total_xp FROM players WHERE id = 1",
+    );
+    const sessions = await row<{ count: number }>(
+      "SELECT COUNT(*) AS count FROM sessions",
+    );
+    const claims = await row<{ count: number }>(
+      "SELECT COUNT(*) AS count FROM quest_claims",
+    );
+    const achievements = await row<{ count: number }>(
+      "SELECT COUNT(*) AS count FROM player_achievements",
+    );
+    const subjects = await row<{ count: number }>(
+      "SELECT COUNT(*) AS count FROM subjects",
+    );
 
     expect(player.name).toBe("Rudra Makwana");
     expect(player.total_xp).toBe(0);

@@ -1,4 +1,4 @@
-import { Cpu, Database, HardDrive, WifiOff } from "lucide-react";
+import { Cpu, Database, HardDrive, Wifi } from "lucide-react";
 import { DataManager } from "@/components/data-manager";
 import { PageHeader } from "@/components/page-header";
 import { ProfileSettings } from "@/components/profile-settings";
@@ -7,8 +7,8 @@ import { SystemPanel } from "@/components/system-panel";
 import { getAppData } from "@/lib/data";
 import { formatNumber } from "@/lib/utils";
 
-export default function SettingsPage() {
-  const data = getAppData();
+export default async function SettingsPage() {
+  const data = await getAppData();
   const usage = data.sessions.reduce<Record<number, number>>((counts, session) => {
     counts[session.subjectId] = (counts[session.subjectId] ?? 0) + 1;
     return counts;
@@ -37,8 +37,8 @@ export default function SettingsPage() {
           <CoreInfo
             icon={Database}
             label="Database"
-            value="SQLite"
-            detail="Local, single-user"
+            value="libSQL"
+            detail="Cloud-synced, single-user"
           />
           <CoreInfo
             icon={HardDrive}
@@ -47,10 +47,10 @@ export default function SettingsPage() {
             detail={`Level ${data.progress.level} · ${data.progress.rank.rank}-Rank`}
           />
           <CoreInfo
-            icon={WifiOff}
+            icon={Wifi}
             label="Network"
-            value="Offline"
-            detail="No account required"
+            value="Online"
+            detail="Persisted in Turso"
           />
           <CoreInfo
             icon={Cpu}

@@ -6,8 +6,8 @@ import { getAppData } from "@/lib/data";
 import { weekRangeLabel } from "@/lib/dates";
 import { formatNumber } from "@/lib/utils";
 
-export default function QuestsPage() {
-  const data = getAppData();
+export default async function QuestsPage() {
+  const data = await getAppData();
   const dailyCleared = data.dailyQuests.filter((quest) => quest.claimed).length;
   const weeklyCleared = data.weeklyQuests.filter(
     (quest) => quest.claimed,

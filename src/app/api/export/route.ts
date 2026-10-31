@@ -1,4 +1,4 @@
-import { db } from "@/lib/db";
+import { db, ensureDatabase } from "@/lib/db";
 import {
   achievements,
   playerAchievements,
@@ -14,20 +14,22 @@ import { getSettingsData } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
-export function GET() {
-  const appSettings = getSettingsData();
+export async function GET() {
+  await ensureDatabase();
+
+  const appSettings = await getSettingsData();
   const backup = {
     exportedAt: new Date().toISOString(),
     app: "Solo Leveling Study Tracker",
     version: 1,
-    player: db.select().from(players).get(),
-    settings: db.select().from(settings).get(),
-    subjects: db.select().from(subjects).all(),
-    sessions: db.select().from(sessions).all(),
-    quests: db.select().from(quests).all(),
-    questClaims: db.select().from(questClaims).all(),
-    achievements: db.select().from(achievements).all(),
-    playerAchievements: db.select().from(playerAchievements).all(),
+    player: (await db.select().from(players))[0],
+    settings: (await db.select().from(settings))[0],
+    subjects: await db.select().from(subjects),
+    sessions: await db.select().from(sessions),
+    quests: await db.select().from(quests),
+    questClaims: await db.select().from(questClaims),
+    achievements: await db.select().from(achievements),
+    playerAchievements: await db.select().from(playerAchievements),
   };
 
   return new Response(JSON.stringify(backup, null, 2), {

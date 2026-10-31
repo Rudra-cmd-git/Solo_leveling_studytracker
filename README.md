@@ -1,6 +1,6 @@
 # The System — Solo Leveling Study Tracker
 
-A single-user, local-first study tracker inspired by the "System" from *Solo Leveling*. Log focus sessions, earn XP, complete daily and weekly quests, build streaks, raise your Hunter rank, and watch your attributes grow.
+A single-user study tracker inspired by the "System" from *Solo Leveling*. Log focus sessions, earn XP, complete daily and weekly quests, build streaks, raise your Hunter rank, and watch your attributes grow.
 
 This is an original fan-made interface. It does not include or redistribute artwork from the series.
 
@@ -19,7 +19,7 @@ This is an original fan-made interface. It does not include or redistribute artw
 - **Settings** for hunter name, daily goal, default timer, timezone, and chime
 - **JSON backup and restore** plus a progress reset
 - **Responsive layout** with desktop sidebar and mobile bottom navigation
-- **Fully offline** after install — no account, server, or external database
+- **Single-user** with no account system — just open it and start training
 
 ## Tech stack
 
@@ -27,7 +27,7 @@ This is an original fan-made interface. It does not include or redistribute artw
 - React 19
 - TypeScript
 - Tailwind CSS v4
-- SQLite through [`better-sqlite3`](https://github.com/WiseLibs/better-sqlite3) and [Drizzle ORM](https://orm.drizzle.team/)
+- SQLite-compatible [libSQL](https://turso.tech/) through [`@libsql/client`](https://github.com/tursodatabase/libsql-client-ts) and [Drizzle ORM](https://orm.drizzle.team/)
 - Zod for input validation
 - Vitest for unit tests
 - Lucide icons
@@ -59,15 +59,44 @@ Open [http://localhost:3000](http://localhost:3000). On first launch, the System
 
 ## Data and privacy
 
-Everything is stored locally in SQLite at `data/study-tracker.db`. The `data/` directory is gitignored and is created automatically on first run.
+Data is stored in a libSQL database. When run locally without configuration, it uses a SQLite file at `data/study-tracker.db`; the `data/` directory is gitignored and is created automatically on first run. When deployed, point the app at a hosted libSQL database (for example [Turso](https://turso.tech/)) using environment variables — see [Deploying](#deploying).
 
 Use **Settings → Data vault → Export backup** to download a complete JSON copy of your record. **Restore backup** replaces the current record with the uploaded file. The backup is validated before anything is written, so a failed restore leaves your existing data untouched.
 
-To store the database somewhere else, set `DATABASE_PATH` before starting the app:
+To use a hosted libSQL database locally, set:
+
+```bash
+TURSO_DATABASE_URL=libsql://your-db.turso.io
+TURSO_AUTH_TOKEN=your-token
+npm run dev
+```
+
+To store the local file somewhere else, set `DATABASE_PATH` instead:
 
 ```bash
 DATABASE_PATH=/path/to/study-tracker.db npm run dev
 ```
+
+## Deploying
+
+The app is ready to deploy to Vercel, but it needs a hosted libSQL database because Vercel's filesystem is read-only and serverless instances do not share local files.
+
+1. Create a [Turso](https://turso.tech/) database and copy its URL and auth token:
+
+   ```bash
+   turso db create solo-leveling
+   turso db show solo-leveling --url
+   turso db tokens create solo-leveling
+   ```
+
+2. In your Vercel project, open **Settings → Environment Variables** and add for all environments:
+
+   | Variable | Value |
+   | --- | --- |
+   | `TURSO_DATABASE_URL` | the `libsql://…` URL |
+   | `TURSO_AUTH_TOKEN` | the generated token |
+
+3. Redeploy. Tables and default quests/achievements are created automatically on the first request.
 
 ## How progression works
 
@@ -125,7 +154,7 @@ src/
   lib/
     data.ts             Aggregated reads for pages
     dates.ts            Timezone-safe date helpers
-    db/                 SQLite schema, bootstrap, and seed data
+    db/                 libSQL client, schema bootstrap, and seed data
     game.ts             XP, rank, streak, stat, and achievement logic
     types.ts            Shared types
 tests/                  Vitest unit tests

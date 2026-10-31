@@ -1,6 +1,7 @@
 import { revalidatePath } from "next/cache";
+import type { InStatement, InValue } from "@libsql/client";
 import { backupSchema } from "@/lib/backup";
-import { sqlite } from "@/lib/db";
+import { client, ensureDatabase } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -8,6 +9,10 @@ const MAX_BYTES = 5 * 1024 * 1024;
 
 function jsonError(message: string, status: number) {
   return Response.json({ ok: false, error: message }, { status });
+}
+
+function statement(sql: string, args: InValue[] = []): InStatement {
+  return { sql, args };
 }
 
 export async function POST(request: Request) {
@@ -70,62 +75,68 @@ export async function POST(request: Request) {
     );
   }
 
-  try {
-    sqlite.transaction(() => {
-      sqlite.exec(`
-        DELETE FROM player_achievements;
-        DELETE FROM quest_claims;
-        DELETE FROM sessions;
-        DELETE FROM subjects;
-        DELETE FROM quests;
-        DELETE FROM achievements;
-        DELETE FROM players;
-        DELETE FROM settings;
-      `);
+  const questById = new Map(data.quests.map((quest) => [quest.id, quest]));
+  const achievementById = new Map(
+    data.achievements.map((achievement) => [achievement.id, achievement]),
+  );
 
-      const insertPlayer = sqlite.prepare(
-        "INSERT INTO players (id, name, total_xp, created_at) VALUES (?, ?, ?, ?)",
-      );
-      insertPlayer.run(
+  const sessionXp = data.sessions.reduce(
+    (sum, session) => sum + session.xpEarned,
+    0,
+  );
+  const claimXp = data.questClaims.reduce(
+    (sum, claim) => sum + (questById.get(claim.questId)?.xpReward ?? 0),
+    0,
+  );
+  const achievementXp = data.playerAchievements.reduce(
+    (sum, entry) =>
+      sum + (achievementById.get(entry.achievementId)?.xpReward ?? 0),
+    0,
+  );
+
+  const statements: InStatement[] = [
+    statement("DELETE FROM player_achievements"),
+    statement("DELETE FROM quest_claims"),
+    statement("DELETE FROM sessions"),
+    statement("DELETE FROM subjects"),
+    statement("DELETE FROM quests"),
+    statement("DELETE FROM achievements"),
+    statement("DELETE FROM players"),
+    statement("DELETE FROM settings"),
+    statement(
+      "INSERT INTO players (id, name, total_xp, created_at) VALUES (?, ?, ?, ?)",
+      [
         data.player.id,
         data.player.name,
         data.player.totalXp,
         data.player.createdAt,
-      );
-
-      const insertSettings = sqlite.prepare(
-        `INSERT INTO settings
-         (id, daily_goal_minutes, default_timer_minutes, timezone, sound_enabled, onboarded)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-      );
-      insertSettings.run(
+      ],
+    ),
+    statement(
+      `INSERT INTO settings
+       (id, daily_goal_minutes, default_timer_minutes, timezone, sound_enabled, onboarded)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
         data.settings.id,
         data.settings.dailyGoalMinutes,
         data.settings.defaultTimerMinutes,
         data.settings.timezone,
         data.settings.soundEnabled ? 1 : 0,
         data.settings.onboarded ? 1 : 0,
-      );
-
-      const insertSubject = sqlite.prepare(
+      ],
+    ),
+    ...data.subjects.map((subject) =>
+      statement(
         "INSERT INTO subjects (id, name, color, created_at) VALUES (?, ?, ?, ?)",
-      );
-      for (const subject of data.subjects) {
-        insertSubject.run(
-          subject.id,
-          subject.name,
-          subject.color,
-          subject.createdAt,
-        );
-      }
-
-      const insertSession = sqlite.prepare(
+        [subject.id, subject.name, subject.color, subject.createdAt],
+      ),
+    ),
+    ...data.sessions.map((session) =>
+      statement(
         `INSERT INTO sessions
          (id, subject_id, topic, notes, duration_minutes, focus_rating, xp_earned, studied_at, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      );
-      for (const session of data.sessions) {
-        insertSession.run(
+        [
           session.id,
           session.subjectId,
           session.topic,
@@ -135,16 +146,15 @@ export async function POST(request: Request) {
           session.xpEarned,
           session.studiedAt,
           session.createdAt,
-        );
-      }
-
-      const insertQuest = sqlite.prepare(
+        ],
+      ),
+    ),
+    ...data.quests.map((quest) =>
+      statement(
         `INSERT INTO quests
          (id, code, title, description, metric, period, target, xp_reward, active, sort_order)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      );
-      for (const quest of data.quests) {
-        insertQuest.run(
+        [
           quest.id,
           quest.code,
           quest.title,
@@ -155,28 +165,21 @@ export async function POST(request: Request) {
           quest.xpReward,
           quest.active ? 1 : 0,
           quest.sortOrder,
-        );
-      }
-
-      const insertClaim = sqlite.prepare(
+        ],
+      ),
+    ),
+    ...data.questClaims.map((claim) =>
+      statement(
         "INSERT INTO quest_claims (id, quest_id, period_key, claimed_at) VALUES (?, ?, ?, ?)",
-      );
-      for (const claim of data.questClaims) {
-        insertClaim.run(
-          claim.id,
-          claim.questId,
-          claim.periodKey,
-          claim.claimedAt,
-        );
-      }
-
-      const insertAchievement = sqlite.prepare(
+        [claim.id, claim.questId, claim.periodKey, claim.claimedAt],
+      ),
+    ),
+    ...data.achievements.map((achievement) =>
+      statement(
         `INSERT INTO achievements
          (id, code, title, description, icon, condition, threshold, xp_reward, sort_order)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      );
-      for (const achievement of data.achievements) {
-        insertAchievement.run(
+        [
           achievement.id,
           achievement.code,
           achievement.title,
@@ -186,50 +189,24 @@ export async function POST(request: Request) {
           achievement.threshold,
           achievement.xpReward,
           achievement.sortOrder,
-        );
-      }
-
-      const insertPlayerAchievement = sqlite.prepare(
+        ],
+      ),
+    ),
+    ...data.playerAchievements.map((entry) =>
+      statement(
         "INSERT INTO player_achievements (id, achievement_id, unlocked_at) VALUES (?, ?, ?)",
-      );
-      for (const entry of data.playerAchievements) {
-        insertPlayerAchievement.run(
-          entry.id,
-          entry.achievementId,
-          entry.unlockedAt,
-        );
-      }
+        [entry.id, entry.achievementId, entry.unlockedAt],
+      ),
+    ),
+    statement("UPDATE players SET total_xp = ? WHERE id = ?", [
+      sessionXp + claimXp + achievementXp,
+      data.player.id,
+    ]),
+  ];
 
-      const sessionXp =
-        (
-          sqlite
-            .prepare("SELECT COALESCE(SUM(xp_earned), 0) AS value FROM sessions")
-            .get() as { value: number }
-        ).value ?? 0;
-      const claimXp =
-        (
-          sqlite
-            .prepare(
-              `SELECT COALESCE(SUM(q.xp_reward), 0) AS value
-               FROM quest_claims c JOIN quests q ON q.id = c.quest_id`,
-            )
-            .get() as { value: number }
-        ).value ?? 0;
-      const achievementXp =
-        (
-          sqlite
-            .prepare(
-              `SELECT COALESCE(SUM(a.xp_reward), 0) AS value
-               FROM player_achievements p
-               JOIN achievements a ON a.id = p.achievement_id`,
-            )
-            .get() as { value: number }
-        ).value ?? 0;
-
-      sqlite
-        .prepare("UPDATE players SET total_xp = ? WHERE id = ?")
-        .run(sessionXp + claimXp + achievementXp, data.player.id);
-    })();
+  try {
+    await ensureDatabase();
+    await client.batch(statements, "write");
   } catch {
     return jsonError(
       "The backup could not be restored. Your existing data was kept.",

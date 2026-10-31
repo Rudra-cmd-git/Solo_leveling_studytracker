@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { desc, eq } from "drizzle-orm";
-import { db } from "./db";
+import { db, ensureDatabase } from "./db";
 import {
   achievements,
   playerAchievements,
@@ -43,16 +43,22 @@ import type {
   SubjectData,
 } from "./types";
 
-function getPlayerRow(): PlayerData {
-  const player = db.select().from(players).where(eq(players.id, 1)).get();
+async function getPlayerRow(): Promise<PlayerData> {
+  const [player] = await db
+    .select()
+    .from(players)
+    .where(eq(players.id, 1));
   if (!player) {
     throw new Error("Player record is missing.");
   }
   return player;
 }
 
-function getSettingsRow(): SettingsData {
-  const row = db.select().from(settings).where(eq(settings.id, 1)).get();
+async function getSettingsRow(): Promise<SettingsData> {
+  const [row] = await db
+    .select()
+    .from(settings)
+    .where(eq(settings.id, 1));
   if (!row) {
     throw new Error("Settings record is missing.");
   }
@@ -65,40 +71,40 @@ function getSettingsRow(): SettingsData {
   };
 }
 
-function getSubjectRows(): SubjectData[] {
+async function getSubjectRows(): Promise<SubjectData[]> {
   return db
     .select({
       id: subjects.id,
       name: subjects.name,
       color: subjects.color,
     })
-    .from(subjects)
-    .all();
+    .from(subjects);
 }
 
-function getSessionRows(subjectRows: SubjectData[]): SessionData[] {
+async function getSessionRows(
+  subjectRows: SubjectData[],
+): Promise<SessionData[]> {
   const subjectMap = new Map(subjectRows.map((subject) => [subject.id, subject]));
-  return db
+  const rows = await db
     .select()
     .from(sessions)
-    .orderBy(desc(sessions.studiedAt), desc(sessions.id))
-    .all()
-    .map((session) => {
-      const subject = subjectMap.get(session.subjectId);
-      return {
-        id: session.id,
-        subjectId: session.subjectId,
-        subjectName: subject?.name ?? "Unknown",
-        subjectColor: subject?.color ?? "#43a9ff",
-        topic: session.topic,
-        notes: session.notes,
-        durationMinutes: session.durationMinutes,
-        focusRating: session.focusRating,
-        xpEarned: session.xpEarned,
-        studiedAt: session.studiedAt,
-        createdAt: session.createdAt,
-      };
-    });
+    .orderBy(desc(sessions.studiedAt), desc(sessions.id));
+  return rows.map((session) => {
+    const subject = subjectMap.get(session.subjectId);
+    return {
+      id: session.id,
+      subjectId: session.subjectId,
+      subjectName: subject?.name ?? "Unknown",
+      subjectColor: subject?.color ?? "#43a9ff",
+      topic: session.topic,
+      notes: session.notes,
+      durationMinutes: session.durationMinutes,
+      focusRating: session.focusRating,
+      xpEarned: session.xpEarned,
+      studiedAt: session.studiedAt,
+      createdAt: session.createdAt,
+    };
+  });
 }
 
 function questProgressValue(
@@ -124,28 +130,27 @@ function questProgressValue(
   }
 }
 
-function buildQuestViews(
+async function buildQuestViews(
   sessionRows: SessionData[],
   timezone: string,
-): {
+): Promise<{
   dailyQuests: QuestView[];
   weeklyQuests: QuestView[];
   today: string;
   week: string;
-} {
+}> {
   const today = todayKey(timezone);
   const week = weekKeyFor(today);
   const weekEnd = addDays(week, 6);
-  const claimRows = db.select().from(questClaims).all();
+  const claimRows = await db.select().from(questClaims);
   const claimSet = new Set(
     claimRows.map((claim) => `${claim.questId}:${claim.periodKey}`),
   );
 
-  const questRows = db
+  const questRows = await db
     .select()
     .from(quests)
-    .where(eq(quests.active, true))
-    .all();
+    .where(eq(quests.active, true));
 
   const views = questRows.map((quest) => {
     const period = quest.period as QuestPeriod;
@@ -186,16 +191,15 @@ function buildQuestViews(
   };
 }
 
-function buildAchievementViews(
+async function buildAchievementViews(
   context: AchievementContext,
   unlocked: Map<number, string>,
-): AchievementView[] {
-  return db
+): Promise<AchievementView[]> {
+  const rows = await db
     .select()
     .from(achievements)
-    .orderBy(achievements.sortOrder)
-    .all()
-    .map((achievement) => {
+    .orderBy(achievements.sortOrder);
+  return rows.map((achievement) => {
       const current = achievementValue(achievement.condition, context);
       return {
         id: achievement.id,
@@ -209,9 +213,9 @@ function buildAchievementViews(
         current,
         earned: unlocked.has(achievement.id),
         earnedAt: unlocked.get(achievement.id) ?? null,
-        percent: Math.min(100, (current / achievement.threshold) * 100),
-      } satisfies AchievementView;
-    });
+      percent: Math.min(100, (current / achievement.threshold) * 100),
+    } satisfies AchievementView;
+  });
 }
 
 function buildDayChart(
@@ -295,12 +299,13 @@ function buildSubjectActivity(
     .sort((a, b) => b.minutes - a.minutes);
 }
 
-export const getAppData = cache((): AppData => {
-  const player = getPlayerRow();
-  const appSettings = getSettingsRow();
-  const subjectRows = getSubjectRows();
-  const sessionRows = getSessionRows(subjectRows);
-  const { dailyQuests, weeklyQuests, today, week } = buildQuestViews(
+export const getAppData = cache(async (): Promise<AppData> => {
+  await ensureDatabase();
+  const player = await getPlayerRow();
+  const appSettings = await getSettingsRow();
+  const subjectRows = await getSubjectRows();
+  const sessionRows = await getSessionRows(subjectRows);
+  const { dailyQuests, weeklyQuests, today, week } = await buildQuestViews(
     sessionRows,
     appSettings.timezone,
   );
@@ -329,7 +334,7 @@ export const getAppData = cache((): AppData => {
     sessionRows.map((session) => session.subjectId),
   ).size;
   const progress = progressFromXp(player.totalXp);
-  const claimRows = db.select().from(questClaims).all();
+  const claimRows = await db.select().from(questClaims);
   const questsClaimed = claimRows.length;
   const weekEnd = addDays(week, 6);
 
@@ -354,13 +359,12 @@ export const getAppData = cache((): AppData => {
     level: progress.level,
   };
 
-  const unlockedRows = db
+  const unlockedRows = await db
     .select({
       achievementId: playerAchievements.achievementId,
       unlockedAt: playerAchievements.unlockedAt,
     })
-    .from(playerAchievements)
-    .all();
+    .from(playerAchievements);
   const unlocked = new Map(
     unlockedRows.map((row) => [row.achievementId, row.unlockedAt]),
   );
@@ -384,7 +388,7 @@ export const getAppData = cache((): AppData => {
     recentSessions: sessionRows.slice(0, 6),
     dailyQuests,
     weeklyQuests,
-    achievements: buildAchievementViews(achievementContext, unlocked),
+    achievements: await buildAchievementViews(achievementContext, unlocked),
     stats,
     streak,
     totals: {
@@ -405,9 +409,10 @@ export const getAppData = cache((): AppData => {
   };
 });
 
-export const getShellData = cache((): ShellData => {
-  const player = getPlayerRow();
-  const appSettings = getSettingsRow();
+export const getShellData = cache(async (): Promise<ShellData> => {
+  await ensureDatabase();
+  const player = await getPlayerRow();
+  const appSettings = await getSettingsRow();
   return {
     name: player.name,
     progress: progressFromXp(player.totalXp),
@@ -415,11 +420,13 @@ export const getShellData = cache((): ShellData => {
   };
 });
 
-export function getSettingsData(): SettingsData {
+export async function getSettingsData(): Promise<SettingsData> {
+  await ensureDatabase();
   return getSettingsRow();
 }
 
-export function getSubjects(): SubjectData[] {
+export async function getSubjects(): Promise<SubjectData[]> {
+  await ensureDatabase();
   return getSubjectRows();
 }
 

@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import Database from "better-sqlite3";
-import { drizzle, type BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
+import { createClient, type Client } from "@libsql/client";
+import { drizzle, type LibSQLDatabase } from "drizzle-orm/libsql";
 import * as schema from "./schema";
 
 const DEFAULT_SUBJECTS = [
@@ -197,174 +197,178 @@ const DEFAULT_ACHIEVEMENTS = [
   },
 ];
 
-function createDatabase(): Database.Database {
+const SCHEMA_STATEMENTS = [
+  `CREATE TABLE IF NOT EXISTS players (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL DEFAULT 'Hunter',
+    total_xp INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL
+  )`,
+  `CREATE TABLE IF NOT EXISTS settings (
+    id INTEGER PRIMARY KEY,
+    daily_goal_minutes INTEGER NOT NULL DEFAULT 60,
+    default_timer_minutes INTEGER NOT NULL DEFAULT 25,
+    timezone TEXT NOT NULL DEFAULT 'Asia/Kolkata',
+    sound_enabled INTEGER NOT NULL DEFAULT 0,
+    onboarded INTEGER NOT NULL DEFAULT 0
+  )`,
+  `CREATE TABLE IF NOT EXISTS subjects (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    color TEXT NOT NULL DEFAULT '#43a9ff',
+    created_at TEXT NOT NULL
+  )`,
+  "CREATE UNIQUE INDEX IF NOT EXISTS subjects_name_idx ON subjects (name)",
+  `CREATE TABLE IF NOT EXISTS sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    subject_id INTEGER NOT NULL REFERENCES subjects(id),
+    topic TEXT NOT NULL,
+    notes TEXT NOT NULL DEFAULT '',
+    duration_minutes INTEGER NOT NULL,
+    focus_rating INTEGER NOT NULL DEFAULT 3,
+    xp_earned INTEGER NOT NULL DEFAULT 0,
+    studied_at TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  )`,
+  "CREATE INDEX IF NOT EXISTS sessions_studied_at_idx ON sessions (studied_at)",
+  `CREATE TABLE IF NOT EXISTS quests (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    code TEXT NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
+    metric TEXT NOT NULL,
+    period TEXT NOT NULL,
+    target INTEGER NOT NULL,
+    xp_reward INTEGER NOT NULL,
+    active INTEGER NOT NULL DEFAULT 1,
+    sort_order INTEGER NOT NULL DEFAULT 0
+  )`,
+  "CREATE UNIQUE INDEX IF NOT EXISTS quests_code_idx ON quests (code)",
+  `CREATE TABLE IF NOT EXISTS quest_claims (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    quest_id INTEGER NOT NULL REFERENCES quests(id) ON DELETE CASCADE,
+    period_key TEXT NOT NULL,
+    claimed_at TEXT NOT NULL
+  )`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS quest_claims_unique_idx
+    ON quest_claims (quest_id, period_key)`,
+  `CREATE TABLE IF NOT EXISTS achievements (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    code TEXT NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
+    icon TEXT NOT NULL DEFAULT 'sparkles',
+    condition TEXT NOT NULL,
+    threshold INTEGER NOT NULL,
+    xp_reward INTEGER NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0
+  )`,
+  "CREATE UNIQUE INDEX IF NOT EXISTS achievements_code_idx ON achievements (code)",
+  `CREATE TABLE IF NOT EXISTS player_achievements (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    achievement_id INTEGER NOT NULL REFERENCES achievements(id) ON DELETE CASCADE,
+    unlocked_at TEXT NOT NULL
+  )`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS player_achievements_unique_idx
+    ON player_achievements (achievement_id)`,
+];
+
+function resolveDatabaseUrl(): string {
+  if (process.env.TURSO_DATABASE_URL) {
+    return process.env.TURSO_DATABASE_URL;
+  }
+
   const databasePath =
     process.env.DATABASE_PATH ??
     path.join(process.cwd(), "data", "study-tracker.db");
 
-  fs.mkdirSync(path.dirname(databasePath), { recursive: true });
+  if (databasePath === ":memory:") {
+    return ":memory:";
+  }
 
-  const sqlite = new Database(databasePath);
-  sqlite.pragma("journal_mode = WAL");
-  sqlite.pragma("foreign_keys = ON");
-  initializeSchema(sqlite);
-  return sqlite;
+  return `file:${databasePath}`;
 }
 
-function initializeSchema(sqlite: Database.Database): void {
-  sqlite.exec(`
-    CREATE TABLE IF NOT EXISTS players (
-      id INTEGER PRIMARY KEY,
-      name TEXT NOT NULL DEFAULT 'Hunter',
-      total_xp INTEGER NOT NULL DEFAULT 0,
-      created_at TEXT NOT NULL
-    );
+function ensureLocalDirectory(url: string): void {
+  if (!url.startsWith("file:")) return;
 
-    CREATE TABLE IF NOT EXISTS settings (
-      id INTEGER PRIMARY KEY,
-      daily_goal_minutes INTEGER NOT NULL DEFAULT 60,
-      default_timer_minutes INTEGER NOT NULL DEFAULT 25,
-      timezone TEXT NOT NULL DEFAULT 'Asia/Kolkata',
-      sound_enabled INTEGER NOT NULL DEFAULT 0,
-      onboarded INTEGER NOT NULL DEFAULT 0
-    );
+  const filePath = url.slice("file:".length);
+  if (!filePath || filePath === ":memory:") return;
 
-    CREATE TABLE IF NOT EXISTS subjects (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      color TEXT NOT NULL DEFAULT '#43a9ff',
-      created_at TEXT NOT NULL
-    );
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+}
 
-    CREATE UNIQUE INDEX IF NOT EXISTS subjects_name_idx ON subjects (name);
+function createDatabaseClient(): Client {
+  const url = resolveDatabaseUrl();
+  ensureLocalDirectory(url);
 
-    CREATE TABLE IF NOT EXISTS sessions (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      subject_id INTEGER NOT NULL REFERENCES subjects(id),
-      topic TEXT NOT NULL,
-      notes TEXT NOT NULL DEFAULT '',
-      duration_minutes INTEGER NOT NULL,
-      focus_rating INTEGER NOT NULL DEFAULT 3,
-      xp_earned INTEGER NOT NULL DEFAULT 0,
-      studied_at TEXT NOT NULL,
-      created_at TEXT NOT NULL
-    );
+  return createClient({
+    url,
+    authToken: process.env.TURSO_AUTH_TOKEN,
+  });
+}
 
-    CREATE INDEX IF NOT EXISTS sessions_studied_at_idx ON sessions (studied_at);
-
-    CREATE TABLE IF NOT EXISTS quests (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      code TEXT NOT NULL,
-      title TEXT NOT NULL,
-      description TEXT NOT NULL,
-      metric TEXT NOT NULL,
-      period TEXT NOT NULL,
-      target INTEGER NOT NULL,
-      xp_reward INTEGER NOT NULL,
-      active INTEGER NOT NULL DEFAULT 1,
-      sort_order INTEGER NOT NULL DEFAULT 0
-    );
-
-    CREATE UNIQUE INDEX IF NOT EXISTS quests_code_idx ON quests (code);
-
-    CREATE TABLE IF NOT EXISTS quest_claims (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      quest_id INTEGER NOT NULL REFERENCES quests(id) ON DELETE CASCADE,
-      period_key TEXT NOT NULL,
-      claimed_at TEXT NOT NULL
-    );
-
-    CREATE UNIQUE INDEX IF NOT EXISTS quest_claims_unique_idx
-      ON quest_claims (quest_id, period_key);
-
-    CREATE TABLE IF NOT EXISTS achievements (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      code TEXT NOT NULL,
-      title TEXT NOT NULL,
-      description TEXT NOT NULL,
-      icon TEXT NOT NULL DEFAULT 'sparkles',
-      condition TEXT NOT NULL,
-      threshold INTEGER NOT NULL,
-      xp_reward INTEGER NOT NULL,
-      sort_order INTEGER NOT NULL DEFAULT 0
-    );
-
-    CREATE UNIQUE INDEX IF NOT EXISTS achievements_code_idx
-      ON achievements (code);
-
-    CREATE TABLE IF NOT EXISTS player_achievements (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      achievement_id INTEGER NOT NULL REFERENCES achievements(id) ON DELETE CASCADE,
-      unlocked_at TEXT NOT NULL
-    );
-
-    CREATE UNIQUE INDEX IF NOT EXISTS player_achievements_unique_idx
-      ON player_achievements (achievement_id);
-  `);
+async function initializeSchema(client: Client): Promise<void> {
+  for (const statement of SCHEMA_STATEMENTS) {
+    await client.execute(statement);
+  }
 
   const now = new Date().toISOString();
 
-  sqlite
-    .prepare(
-      "INSERT OR IGNORE INTO players (id, name, total_xp, created_at) VALUES (1, 'Hunter', 0, ?)",
-    )
-    .run(now);
+  const seedStatements = [
+    {
+      sql: "INSERT OR IGNORE INTO players (id, name, total_xp, created_at) VALUES (1, 'Hunter', 0, ?)",
+      args: [now],
+    },
+    {
+      sql: `INSERT OR IGNORE INTO settings
+        (id, daily_goal_minutes, default_timer_minutes, timezone, sound_enabled, onboarded)
+        VALUES (1, 60, 25, 'Asia/Kolkata', 0, 0)`,
+      args: [],
+    },
+    ...DEFAULT_SUBJECTS.map((subject) => ({
+      sql: "INSERT OR IGNORE INTO subjects (name, color, created_at) VALUES (?, ?, ?)",
+      args: [subject.name, subject.color, now],
+    })),
+    ...DEFAULT_QUESTS.map((quest) => ({
+      sql: `INSERT OR IGNORE INTO quests
+        (code, title, description, metric, period, target, xp_reward, active, sort_order)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)`,
+      args: [
+        quest.code,
+        quest.title,
+        quest.description,
+        quest.metric,
+        quest.period,
+        quest.target,
+        quest.xpReward,
+        quest.sortOrder,
+      ],
+    })),
+    ...DEFAULT_ACHIEVEMENTS.map((achievement) => ({
+      sql: `INSERT OR IGNORE INTO achievements
+        (code, title, description, icon, condition, threshold, xp_reward, sort_order)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [
+        achievement.code,
+        achievement.title,
+        achievement.description,
+        achievement.icon,
+        achievement.condition,
+        achievement.threshold,
+        achievement.xpReward,
+        achievement.sortOrder,
+      ],
+    })),
+  ];
 
-  sqlite
-    .prepare(
-      `INSERT OR IGNORE INTO settings
-       (id, daily_goal_minutes, default_timer_minutes, timezone, sound_enabled, onboarded)
-       VALUES (1, 60, 25, 'Asia/Kolkata', 0, 0)`,
-    )
-    .run();
-
-  const insertSubject = sqlite.prepare(
-    "INSERT OR IGNORE INTO subjects (name, color, created_at) VALUES (?, ?, ?)",
-  );
-  for (const subject of DEFAULT_SUBJECTS) {
-    insertSubject.run(subject.name, subject.color, now);
-  }
-
-  const insertQuest = sqlite.prepare(
-    `INSERT OR IGNORE INTO quests
-     (code, title, description, metric, period, target, xp_reward, active, sort_order)
-     VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)`,
-  );
-  for (const quest of DEFAULT_QUESTS) {
-    insertQuest.run(
-      quest.code,
-      quest.title,
-      quest.description,
-      quest.metric,
-      quest.period,
-      quest.target,
-      quest.xpReward,
-      quest.sortOrder,
-    );
-  }
-
-  const insertAchievement = sqlite.prepare(
-    `INSERT OR IGNORE INTO achievements
-     (code, title, description, icon, condition, threshold, xp_reward, sort_order)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-  );
-  for (const achievement of DEFAULT_ACHIEVEMENTS) {
-    insertAchievement.run(
-      achievement.code,
-      achievement.title,
-      achievement.description,
-      achievement.icon,
-      achievement.condition,
-      achievement.threshold,
-      achievement.xpReward,
-      achievement.sortOrder,
-    );
-  }
+  await client.batch(seedStatements, "write");
 }
 
 interface DatabaseState {
-  sqlite: Database.Database;
-  db: BetterSQLite3Database<typeof schema>;
+  client: Client;
+  db: LibSQLDatabase<typeof schema>;
+  ready: Promise<void>;
 }
 
 const globalForDatabase = globalThis as unknown as {
@@ -373,11 +377,15 @@ const globalForDatabase = globalThis as unknown as {
 
 function getDatabaseState(): DatabaseState {
   if (!globalForDatabase.soloLevelingDatabase) {
-    const sqlite = createDatabase();
+    const client = createDatabaseClient();
     globalForDatabase.soloLevelingDatabase = {
-      sqlite,
-      db: drizzle(sqlite, { schema }),
+      client,
+      db: drizzle(client, { schema }),
+      ready: initializeSchema(client),
     };
+    globalForDatabase.soloLevelingDatabase.ready.catch(() => {
+      globalForDatabase.soloLevelingDatabase = undefined;
+    });
   }
 
   return globalForDatabase.soloLevelingDatabase;
@@ -385,5 +393,9 @@ function getDatabaseState(): DatabaseState {
 
 const state = getDatabaseState();
 
-export const sqlite = state.sqlite;
+export const client = state.client;
 export const db = state.db;
+
+export function ensureDatabase(): Promise<void> {
+  return getDatabaseState().ready;
+}

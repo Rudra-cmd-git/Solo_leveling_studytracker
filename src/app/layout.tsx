@@ -38,9 +38,9 @@ export const viewport: Viewport = {
   colorScheme: "dark",
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
-  const shell = getShellData();
-  const settings = getSettingsData();
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  const shell = await getShellData();
+  const settings = await getSettingsData();
 
   return (
     <html

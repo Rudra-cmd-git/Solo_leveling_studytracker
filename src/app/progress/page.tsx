@@ -13,8 +13,8 @@ import { getAppData } from "@/lib/data";
 import { formatMinutes } from "@/lib/game";
 import { formatNumber } from "@/lib/utils";
 
-export default function ProgressPage() {
-  const data = getAppData();
+export default async function ProgressPage() {
+  const data = await getAppData();
   const earned = data.achievements.filter(
     (achievement) => achievement.earned,
   ).length;

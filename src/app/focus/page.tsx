@@ -7,8 +7,8 @@ import { getAppData } from "@/lib/data";
 import { longDate } from "@/lib/dates";
 import { progressUnit } from "@/lib/utils";
 
-export default function FocusPage() {
-  const data = getAppData();
+export default async function FocusPage() {
+  const data = await getAppData();
 
   return (
     <div className="space-y-5 sm:space-y-6">

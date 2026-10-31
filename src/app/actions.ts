@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
-import { db } from "@/lib/db";
+import { db, ensureDatabase } from "@/lib/db";
 import {
   achievements,
   playerAchievements,
@@ -84,83 +84,75 @@ function firstIssue(error: z.ZodError): string {
   return error.issues[0]?.message ?? "Invalid input.";
 }
 
-function getTimeZone(): string {
-  return (
-    db.select({ timezone: settings.timezone }).from(settings).where(eq(settings.id, 1)).get()
-      ?.timezone ?? "Asia/Kolkata"
-  );
+async function getTimeZone(): Promise<string> {
+  const [row] = await db
+    .select({ timezone: settings.timezone })
+    .from(settings)
+    .where(eq(settings.id, 1));
+  return row?.timezone ?? "Asia/Kolkata";
 }
 
-function getPlayerTotalXp(): number {
-  return (
-    db
-      .select({ totalXp: players.totalXp })
-      .from(players)
-      .where(eq(players.id, 1))
-      .get()?.totalXp ?? 0
-  );
+async function getPlayerTotalXp(): Promise<number> {
+  const [row] = await db
+    .select({ totalXp: players.totalXp })
+    .from(players)
+    .where(eq(players.id, 1));
+  return row?.totalXp ?? 0;
 }
 
-function recalculateTotalXp(): number {
-  const sessionTotal =
-    db
-      .select({
-        value: sql<number>`coalesce(sum(${sessions.xpEarned}), 0)`,
-      })
-      .from(sessions)
-      .get()?.value ?? 0;
+async function recalculateTotalXp(): Promise<number> {
+  const [sessionRow] = await db
+    .select({
+      value: sql<number>`coalesce(sum(${sessions.xpEarned}), 0)`,
+    })
+    .from(sessions);
 
-  const claimTotal =
-    db
-      .select({
-        value: sql<number>`coalesce(sum(${quests.xpReward}), 0)`,
-      })
-      .from(questClaims)
-      .innerJoin(quests, eq(questClaims.questId, quests.id))
-      .get()?.value ?? 0;
+  const [claimRow] = await db
+    .select({
+      value: sql<number>`coalesce(sum(${quests.xpReward}), 0)`,
+    })
+    .from(questClaims)
+    .innerJoin(quests, eq(questClaims.questId, quests.id));
 
-  const achievementTotal =
-    db
-      .select({
-        value: sql<number>`coalesce(sum(${achievements.xpReward}), 0)`,
-      })
-      .from(playerAchievements)
-      .innerJoin(
-        achievements,
-        eq(playerAchievements.achievementId, achievements.id),
-      )
-      .get()?.value ?? 0;
+  const [achievementRow] = await db
+    .select({
+      value: sql<number>`coalesce(sum(${achievements.xpReward}), 0)`,
+    })
+    .from(playerAchievements)
+    .innerJoin(
+      achievements,
+      eq(playerAchievements.achievementId, achievements.id),
+    );
 
   const total =
-    Number(sessionTotal) + Number(claimTotal) + Number(achievementTotal);
+    Number(sessionRow?.value ?? 0) +
+    Number(claimRow?.value ?? 0) +
+    Number(achievementRow?.value ?? 0);
 
-  db.update(players)
+  await db
+    .update(players)
     .set({ totalXp: total })
-    .where(eq(players.id, 1))
-    .run();
+    .where(eq(players.id, 1));
 
   return total;
 }
 
-function getAchievementContext(): AchievementContext {
-  const sessionRows = db
+async function getAchievementContext(): Promise<AchievementContext> {
+  const sessionRows = await db
     .select({
       durationMinutes: sessions.durationMinutes,
       studiedAt: sessions.studiedAt,
       subjectId: sessions.subjectId,
     })
-    .from(sessions)
-    .all();
-  const claimCount =
-    db
-      .select({ value: sql<number>`count(*)` })
-      .from(questClaims)
-      .get()?.value ?? 0;
+    .from(sessions);
+  const [claimRow] = await db
+    .select({ value: sql<number>`count(*)` })
+    .from(questClaims);
   const totalMinutes = sessionRows.reduce(
     (sum, session) => sum + session.durationMinutes,
     0,
   );
-  const timezone = getTimeZone();
+  const timezone = await getTimeZone();
   const streak = calculateStreaks(
     sessionRows.map((session) => session.studiedAt),
     todayKey(timezone),
@@ -174,51 +166,49 @@ function getAchievementContext(): AchievementContext {
       (max, session) => Math.max(max, session.durationMinutes),
       0,
     ),
-    questsClaimed: Number(claimCount),
+    questsClaimed: Number(claimRow?.value ?? 0),
     distinctSubjects: new Set(
       sessionRows.map((session) => session.subjectId),
     ).size,
-    level: progressFromXp(getPlayerTotalXp()).level,
+    level: progressFromXp(await getPlayerTotalXp()).level,
   };
 }
 
-function syncAchievements(): AchievementAward[] {
+async function syncAchievements(): Promise<AchievementAward[]> {
   const awarded: AchievementAward[] = [];
 
   for (let pass = 0; pass < 5; pass += 1) {
     const unlockedIds = new Set(
-      db
-        .select({ id: playerAchievements.achievementId })
-        .from(playerAchievements)
-        .all()
-        .map((row) => row.id),
+      (
+        await db
+          .select({ id: playerAchievements.achievementId })
+          .from(playerAchievements)
+      ).map((row) => row.id),
     );
-    const context = getAchievementContext();
-    const eligible = db
-      .select()
-      .from(achievements)
-      .all()
-      .filter(
-        (achievement) =>
-          !unlockedIds.has(achievement.id) &&
-          isAchievementEarned(
-            achievement.condition,
-            achievement.threshold,
-            context,
-          ),
-      );
+    const context = await getAchievementContext();
+    const eligible = (
+      await db.select().from(achievements)
+    ).filter(
+      (achievement) =>
+        !unlockedIds.has(achievement.id) &&
+        isAchievementEarned(
+          achievement.condition,
+          achievement.threshold,
+          context,
+        ),
+    );
 
     if (eligible.length === 0) break;
 
     const unlockedAt = new Date().toISOString();
     for (const achievement of eligible) {
-      db.insert(playerAchievements)
+      await db
+        .insert(playerAchievements)
         .values({
           achievementId: achievement.id,
           unlockedAt,
         })
-        .onConflictDoNothing()
-        .run();
+        .onConflictDoNothing();
       awarded.push({
         title: achievement.title,
         description: achievement.description,
@@ -226,7 +216,7 @@ function syncAchievements(): AchievementAward[] {
       });
     }
 
-    recalculateTotalXp();
+    await recalculateTotalXp();
   }
 
   return awarded;
@@ -260,38 +250,37 @@ export async function saveSession(input: SessionInput): Promise<SessionResult> {
   const parsed = sessionSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: firstIssue(parsed.error) };
 
-  const subject = db
+  await ensureDatabase();
+
+  const [subject] = await db
     .select({ id: subjects.id })
     .from(subjects)
-    .where(eq(subjects.id, parsed.data.subjectId))
-    .get();
+    .where(eq(subjects.id, parsed.data.subjectId));
 
   if (!subject) return { ok: false, error: "That subject no longer exists." };
 
-  const today = todayKey(getTimeZone());
+  const today = todayKey(await getTimeZone());
   if (parsed.data.studiedAt > today) {
     return { ok: false, error: "Study date cannot be in the future." };
   }
 
   const xp = sessionXp(parsed.data.durationMinutes, parsed.data.focusRating);
-  const totalXpBefore = getPlayerTotalXp();
+  const totalXpBefore = await getPlayerTotalXp();
 
-  db.insert(sessions)
-    .values({
-      subjectId: parsed.data.subjectId,
-      topic: parsed.data.topic,
-      notes: parsed.data.notes,
-      durationMinutes: parsed.data.durationMinutes,
-      focusRating: parsed.data.focusRating,
-      xpEarned: xp,
-      studiedAt: parsed.data.studiedAt,
-      createdAt: new Date().toISOString(),
-    })
-    .run();
+  await db.insert(sessions).values({
+    subjectId: parsed.data.subjectId,
+    topic: parsed.data.topic,
+    notes: parsed.data.notes,
+    durationMinutes: parsed.data.durationMinutes,
+    focusRating: parsed.data.focusRating,
+    xpEarned: xp,
+    studiedAt: parsed.data.studiedAt,
+    createdAt: new Date().toISOString(),
+  });
 
-  recalculateTotalXp();
-  const achievementAwards = syncAchievements();
-  const totalXpAfter = getPlayerTotalXp();
+  await recalculateTotalXp();
+  const achievementAwards = await syncAchievements();
+  const totalXpAfter = await getPlayerTotalXp();
   const result = nextLevelResult(totalXpBefore, totalXpAfter, achievementAwards);
 
   revalidateAll();
@@ -309,25 +298,26 @@ export async function deleteSession(id: number): Promise<ActionResult> {
     return { ok: false, error: "Invalid session." };
   }
 
-  db.delete(sessions).where(eq(sessions.id, sessionId)).run();
-  recalculateTotalXp();
-  syncAchievements();
+  await ensureDatabase();
+
+  await db.delete(sessions).where(eq(sessions.id, sessionId));
+  await recalculateTotalXp();
+  await syncAchievements();
   revalidateAll();
   return { ok: true };
 }
 
-function relevantQuestSessions(period: string, timezone: string) {
+async function relevantQuestSessions(period: string, timezone: string) {
   const today = todayKey(timezone);
   const week = weekKeyFor(today);
   const weekEnd = addDays(week, 6);
-  const sessionRows = db
+  const sessionRows = await db
     .select({
       durationMinutes: sessions.durationMinutes,
       notes: sessions.notes,
       studiedAt: sessions.studiedAt,
     })
-    .from(sessions)
-    .all();
+    .from(sessions);
 
   return sessionRows.filter((session) =>
     period === "daily"
@@ -368,50 +358,48 @@ export async function claimQuest(questId: number): Promise<QuestResult> {
     return { ok: false, error: "Invalid quest." };
   }
 
-  const quest = db
+  await ensureDatabase();
+
+  const [quest] = await db
     .select()
     .from(quests)
-    .where(eq(quests.id, id))
-    .get();
+    .where(eq(quests.id, id));
 
   if (!quest || !quest.active) {
     return { ok: false, error: "This quest is no longer available." };
   }
 
-  const timezone = getTimeZone();
+  const timezone = await getTimeZone();
   const today = todayKey(timezone);
   const week = weekKeyFor(today);
   const periodKey = quest.period === "daily" ? today : week;
-  const existingClaim = db
+  const [existingClaim] = await db
     .select({ id: questClaims.id })
     .from(questClaims)
     .where(
       sql`${questClaims.questId} = ${quest.id} AND ${questClaims.periodKey} = ${periodKey}`,
-    )
-    .get();
+    );
 
   if (existingClaim) {
     return { ok: false, error: "This quest reward has already been claimed." };
   }
 
-  const relevant = relevantQuestSessions(quest.period, timezone);
+  const relevant = await relevantQuestSessions(quest.period, timezone);
   const progress = computeQuestProgress(quest.metric, relevant);
   if (progress < quest.target) {
     return { ok: false, error: "Quest requirements are not complete yet." };
   }
 
-  const totalXpBefore = getPlayerTotalXp();
-  db.insert(questClaims)
-    .values({
-      questId: quest.id,
-      periodKey,
-      claimedAt: new Date().toISOString(),
-    })
-    .run();
+  const totalXpBefore = await getPlayerTotalXp();
+  await db.insert(questClaims).values({
+    questId: quest.id,
+    periodKey,
+    claimedAt: new Date().toISOString(),
+  });
 
-  recalculateTotalXp();
-  const achievementAwards = syncAchievements();
-  const totalXpAfter = getPlayerTotalXp();
+  await recalculateTotalXp();
+  const achievementAwards = await syncAchievements();
+  const totalXpAfter = await getPlayerTotalXp();
   const result = nextLevelResult(totalXpBefore, totalXpAfter, achievementAwards);
 
   revalidateAll();
@@ -429,20 +417,22 @@ export async function updateSettings(
   const parsed = settingsSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: firstIssue(parsed.error) };
 
-  db.update(players)
-    .set({ name: parsed.data.name })
-    .where(eq(players.id, 1))
-    .run();
+  await ensureDatabase();
 
-  db.update(settings)
+  await db
+    .update(players)
+    .set({ name: parsed.data.name })
+    .where(eq(players.id, 1));
+
+  await db
+    .update(settings)
     .set({
       dailyGoalMinutes: parsed.data.dailyGoalMinutes,
       defaultTimerMinutes: parsed.data.defaultTimerMinutes,
       timezone: parsed.data.timezone,
       soundEnabled: parsed.data.soundEnabled,
     })
-    .where(eq(settings.id, 1))
-    .run();
+    .where(eq(settings.id, 1));
 
   revalidateAll();
   return { ok: true };
@@ -454,19 +444,21 @@ export async function completeOnboarding(
   const parsed = onboardingSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: firstIssue(parsed.error) };
 
-  db.update(players)
-    .set({ name: parsed.data.name })
-    .where(eq(players.id, 1))
-    .run();
+  await ensureDatabase();
 
-  db.update(settings)
+  await db
+    .update(players)
+    .set({ name: parsed.data.name })
+    .where(eq(players.id, 1));
+
+  await db
+    .update(settings)
     .set({
       dailyGoalMinutes: parsed.data.dailyGoalMinutes,
       timezone: parsed.data.timezone,
       onboarded: true,
     })
-    .where(eq(settings.id, 1))
-    .run();
+    .where(eq(settings.id, 1));
 
   revalidateAll();
   return { ok: true };
@@ -479,14 +471,14 @@ export async function addSubject(
   const parsed = subjectSchema.safeParse({ name, color });
   if (!parsed.success) return { ok: false, error: firstIssue(parsed.error) };
 
+  await ensureDatabase();
+
   try {
-    db.insert(subjects)
-      .values({
-        name: parsed.data.name,
-        color: parsed.data.color,
-        createdAt: new Date().toISOString(),
-      })
-      .run();
+    await db.insert(subjects).values({
+      name: parsed.data.name,
+      color: parsed.data.color,
+      createdAt: new Date().toISOString(),
+    });
   } catch (error) {
     if (error instanceof Error && error.message.includes("UNIQUE")) {
       return { ok: false, error: "That subject already exists." };
@@ -504,30 +496,32 @@ export async function deleteSubject(id: number): Promise<ActionResult> {
     return { ok: false, error: "Invalid subject." };
   }
 
-  const usage =
-    db
-      .select({ value: sql<number>`count(*)` })
-      .from(sessions)
-      .where(eq(sessions.subjectId, subjectId))
-      .get()?.value ?? 0;
+  await ensureDatabase();
 
-  if (Number(usage) > 0) {
+  const [usageRow] = await db
+    .select({ value: sql<number>`count(*)` })
+    .from(sessions)
+    .where(eq(sessions.subjectId, subjectId));
+
+  if (Number(usageRow?.value ?? 0) > 0) {
     return {
       ok: false,
       error: "This subject has study sessions and cannot be deleted.",
     };
   }
 
-  db.delete(subjects).where(eq(subjects.id, subjectId)).run();
+  await db.delete(subjects).where(eq(subjects.id, subjectId));
   revalidateAll();
   return { ok: true };
 }
 
 export async function resetProgress(): Promise<ActionResult> {
-  db.delete(sessions).run();
-  db.delete(questClaims).run();
-  db.delete(playerAchievements).run();
-  db.update(players).set({ totalXp: 0 }).where(eq(players.id, 1)).run();
+  await ensureDatabase();
+
+  await db.delete(sessions);
+  await db.delete(questClaims);
+  await db.delete(playerAchievements);
+  await db.update(players).set({ totalXp: 0 }).where(eq(players.id, 1));
   revalidateAll();
   return { ok: true };
 }
