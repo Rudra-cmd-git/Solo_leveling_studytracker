@@ -1,0 +1,428 @@
+import { cache } from "react";
+import { desc, eq } from "drizzle-orm";
+import { db } from "./db";
+import {
+  achievements,
+  playerAchievements,
+  players,
+  questClaims,
+  quests,
+  sessions,
+  settings,
+  subjects,
+} from "./db/schema";
+import {
+  addDays,
+  heatmapDays,
+  lastNDays,
+  monthDay,
+  todayKey,
+  weekDates,
+  weekKeyFor,
+  weekdayShort,
+} from "./dates";
+import {
+  achievementValue,
+  calculateStats,
+  calculateStreaks,
+  progressFromXp,
+  type AchievementContext,
+} from "./game";
+import type {
+  AchievementView,
+  AppData,
+  HeatmapDay,
+  PlayerData,
+  QuestMetric,
+  QuestPeriod,
+  QuestView,
+  SessionData,
+  SettingsData,
+  ShellData,
+  SubjectActivity,
+  SubjectData,
+} from "./types";
+
+function getPlayerRow(): PlayerData {
+  const player = db.select().from(players).where(eq(players.id, 1)).get();
+  if (!player) {
+    throw new Error("Player record is missing.");
+  }
+  return player;
+}
+
+function getSettingsRow(): SettingsData {
+  const row = db.select().from(settings).where(eq(settings.id, 1)).get();
+  if (!row) {
+    throw new Error("Settings record is missing.");
+  }
+  return {
+    dailyGoalMinutes: row.dailyGoalMinutes,
+    defaultTimerMinutes: row.defaultTimerMinutes,
+    timezone: row.timezone,
+    soundEnabled: row.soundEnabled,
+    onboarded: row.onboarded,
+  };
+}
+
+function getSubjectRows(): SubjectData[] {
+  return db
+    .select({
+      id: subjects.id,
+      name: subjects.name,
+      color: subjects.color,
+    })
+    .from(subjects)
+    .all();
+}
+
+function getSessionRows(subjectRows: SubjectData[]): SessionData[] {
+  const subjectMap = new Map(subjectRows.map((subject) => [subject.id, subject]));
+  return db
+    .select()
+    .from(sessions)
+    .orderBy(desc(sessions.studiedAt), desc(sessions.id))
+    .all()
+    .map((session) => {
+      const subject = subjectMap.get(session.subjectId);
+      return {
+        id: session.id,
+        subjectId: session.subjectId,
+        subjectName: subject?.name ?? "Unknown",
+        subjectColor: subject?.color ?? "#43a9ff",
+        topic: session.topic,
+        notes: session.notes,
+        durationMinutes: session.durationMinutes,
+        focusRating: session.focusRating,
+        xpEarned: session.xpEarned,
+        studiedAt: session.studiedAt,
+        createdAt: session.createdAt,
+      };
+    });
+}
+
+function questProgressValue(
+  metric: QuestMetric,
+  relevantSessions: SessionData[],
+): number {
+  switch (metric) {
+    case "minutes":
+      return relevantSessions.reduce(
+        (sum, session) => sum + session.durationMinutes,
+        0,
+      );
+    case "sessions":
+      return relevantSessions.length;
+    case "reflections":
+      return relevantSessions.filter(
+        (session) => session.notes.trim().length >= 10,
+      ).length;
+    case "days":
+      return new Set(relevantSessions.map((session) => session.studiedAt)).size;
+    default:
+      return 0;
+  }
+}
+
+function buildQuestViews(
+  sessionRows: SessionData[],
+  timezone: string,
+): {
+  dailyQuests: QuestView[];
+  weeklyQuests: QuestView[];
+  today: string;
+  week: string;
+} {
+  const today = todayKey(timezone);
+  const week = weekKeyFor(today);
+  const weekEnd = addDays(week, 6);
+  const claimRows = db.select().from(questClaims).all();
+  const claimSet = new Set(
+    claimRows.map((claim) => `${claim.questId}:${claim.periodKey}`),
+  );
+
+  const questRows = db
+    .select()
+    .from(quests)
+    .where(eq(quests.active, true))
+    .all();
+
+  const views = questRows.map((quest) => {
+    const period = quest.period as QuestPeriod;
+    const periodKey = period === "daily" ? today : week;
+    const relevant =
+      period === "daily"
+        ? sessionRows.filter((session) => session.studiedAt === today)
+        : sessionRows.filter(
+            (session) =>
+              session.studiedAt >= week && session.studiedAt <= weekEnd,
+          );
+
+    const progress = questProgressValue(quest.metric as QuestMetric, relevant);
+    const claimed = claimSet.has(`${quest.id}:${periodKey}`);
+
+    return {
+      id: quest.id,
+      code: quest.code,
+      title: quest.title,
+      description: quest.description,
+      metric: quest.metric as QuestMetric,
+      period,
+      target: quest.target,
+      xpReward: quest.xpReward,
+      progress,
+      periodKey,
+      claimed,
+      complete: progress >= quest.target,
+      percent: Math.min(100, (progress / quest.target) * 100),
+    } satisfies QuestView;
+  });
+
+  return {
+    dailyQuests: views.filter((quest) => quest.period === "daily"),
+    weeklyQuests: views.filter((quest) => quest.period === "weekly"),
+    today,
+    week,
+  };
+}
+
+function buildAchievementViews(
+  context: AchievementContext,
+  unlocked: Map<number, string>,
+): AchievementView[] {
+  return db
+    .select()
+    .from(achievements)
+    .orderBy(achievements.sortOrder)
+    .all()
+    .map((achievement) => {
+      const current = achievementValue(achievement.condition, context);
+      return {
+        id: achievement.id,
+        code: achievement.code,
+        title: achievement.title,
+        description: achievement.description,
+        icon: achievement.icon,
+        xpReward: achievement.xpReward,
+        condition: achievement.condition,
+        threshold: achievement.threshold,
+        current,
+        earned: unlocked.has(achievement.id),
+        earnedAt: unlocked.get(achievement.id) ?? null,
+        percent: Math.min(100, (current / achievement.threshold) * 100),
+      } satisfies AchievementView;
+    });
+}
+
+function buildDayChart(
+  sessionRows: SessionData[],
+  endDate: string,
+  count: number,
+): AppData["charts"]["lastSevenDays"] {
+  const dates = lastNDays(endDate, count);
+  const totals = new Map<string, { minutes: number; xp: number }>();
+
+  for (const session of sessionRows) {
+    const current = totals.get(session.studiedAt) ?? { minutes: 0, xp: 0 };
+    current.minutes += session.durationMinutes;
+    current.xp += session.xpEarned;
+    totals.set(session.studiedAt, current);
+  }
+
+  const raw = dates.map((date) => ({
+    date,
+    label: count <= 7 ? weekdayShort(date) : monthDay(date),
+    minutes: totals.get(date)?.minutes ?? 0,
+    xp: totals.get(date)?.xp ?? 0,
+    level: 0,
+  }));
+
+  const max = Math.max(60, ...raw.map((day) => day.minutes));
+  return raw.map((day) => ({
+    ...day,
+    level: Math.max(0, Math.round((day.minutes / max) * 100)),
+  }));
+}
+
+function buildHeatmap(sessionRows: SessionData[], today: string): HeatmapDay[] {
+  const totals = new Map<string, number>();
+  for (const session of sessionRows) {
+    totals.set(
+      session.studiedAt,
+      (totals.get(session.studiedAt) ?? 0) + session.durationMinutes,
+    );
+  }
+
+  return heatmapDays(today, 12).map((date) => {
+    const minutes = totals.get(date) ?? 0;
+    let level = 0;
+    if (minutes > 0) level = 1;
+    if (minutes >= 30) level = 2;
+    if (minutes >= 60) level = 3;
+    if (minutes >= 120) level = 4;
+
+    return { date, minutes, level };
+  });
+}
+
+function buildSubjectActivity(
+  subjectRows: SubjectData[],
+  sessionRows: SessionData[],
+): SubjectActivity[] {
+  const totals = new Map<number, number>();
+  for (const session of sessionRows) {
+    totals.set(
+      session.subjectId,
+      (totals.get(session.subjectId) ?? 0) + session.durationMinutes,
+    );
+  }
+
+  const totalMinutes = Math.max(
+    1,
+    [...totals.values()].reduce((sum, minutes) => sum + minutes, 0),
+  );
+
+  return subjectRows
+    .map((subject) => {
+      const minutes = totals.get(subject.id) ?? 0;
+      return {
+        ...subject,
+        minutes,
+        percent: (minutes / totalMinutes) * 100,
+      };
+    })
+    .filter((subject) => subject.minutes > 0)
+    .sort((a, b) => b.minutes - a.minutes);
+}
+
+export const getAppData = cache((): AppData => {
+  const player = getPlayerRow();
+  const appSettings = getSettingsRow();
+  const subjectRows = getSubjectRows();
+  const sessionRows = getSessionRows(subjectRows);
+  const { dailyQuests, weeklyQuests, today, week } = buildQuestViews(
+    sessionRows,
+    appSettings.timezone,
+  );
+
+  const streak = calculateStreaks(
+    sessionRows.map((session) => session.studiedAt),
+    today,
+  );
+  const totalMinutes = sessionRows.reduce(
+    (sum, session) => sum + session.durationMinutes,
+    0,
+  );
+  const focusWeighted = sessionRows.reduce(
+    (sum, session) => sum + (session.durationMinutes * session.focusRating) / 2,
+    0,
+  );
+  const reflectionCount = sessionRows.filter(
+    (session) => session.notes.trim().length >= 10,
+  ).length;
+  const totalSessions = sessionRows.length;
+  const longestSession = sessionRows.reduce(
+    (max, session) => Math.max(max, session.durationMinutes),
+    0,
+  );
+  const distinctSubjects = new Set(
+    sessionRows.map((session) => session.subjectId),
+  ).size;
+  const progress = progressFromXp(player.totalXp);
+  const claimRows = db.select().from(questClaims).all();
+  const questsClaimed = claimRows.length;
+  const weekEnd = addDays(week, 6);
+
+  const stats = calculateStats({
+    totalMinutes,
+    focusWeighted,
+    questsClaimed,
+    bestStreak: streak.best,
+    currentStreak: streak.current,
+    sessionCount: totalSessions,
+    reflectionCount,
+    subjectCount: distinctSubjects,
+  });
+
+  const achievementContext: AchievementContext = {
+    totalSessions,
+    totalMinutes,
+    bestStreak: streak.best,
+    longestSession,
+    questsClaimed,
+    distinctSubjects,
+    level: progress.level,
+  };
+
+  const unlockedRows = db
+    .select({
+      achievementId: playerAchievements.achievementId,
+      unlockedAt: playerAchievements.unlockedAt,
+    })
+    .from(playerAchievements)
+    .all();
+  const unlocked = new Map(
+    unlockedRows.map((row) => [row.achievementId, row.unlockedAt]),
+  );
+
+  const todayMinutes = sessionRows
+    .filter((session) => session.studiedAt === today)
+    .reduce((sum, session) => sum + session.durationMinutes, 0);
+  const weekMinutes = sessionRows
+    .filter(
+      (session) =>
+        session.studiedAt >= week && session.studiedAt <= weekEnd,
+    )
+    .reduce((sum, session) => sum + session.durationMinutes, 0);
+
+  return {
+    player,
+    settings: appSettings,
+    progress,
+    subjects: subjectRows,
+    sessions: sessionRows,
+    recentSessions: sessionRows.slice(0, 6),
+    dailyQuests,
+    weeklyQuests,
+    achievements: buildAchievementViews(achievementContext, unlocked),
+    stats,
+    streak,
+    totals: {
+      minutes: totalMinutes,
+      sessions: totalSessions,
+      todayMinutes,
+      weekMinutes,
+      questsClaimed,
+    },
+    charts: {
+      lastSevenDays: buildDayChart(sessionRows, today, 7),
+      lastFourteenDays: buildDayChart(sessionRows, today, 14),
+      subjects: buildSubjectActivity(subjectRows, sessionRows),
+      heatmap: buildHeatmap(sessionRows, today),
+    },
+    todayKey: today,
+    weekKey: week,
+  };
+});
+
+export const getShellData = cache((): ShellData => {
+  const player = getPlayerRow();
+  const appSettings = getSettingsRow();
+  return {
+    name: player.name,
+    progress: progressFromXp(player.totalXp),
+    onboarded: appSettings.onboarded,
+  };
+});
+
+export function getSettingsData(): SettingsData {
+  return getSettingsRow();
+}
+
+export function getSubjects(): SubjectData[] {
+  return getSubjectRows();
+}
+
+export function getWeekDates(weekKey: string): string[] {
+  return weekDates(weekKey);
+}
