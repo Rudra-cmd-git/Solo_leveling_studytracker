@@ -4,10 +4,6 @@ A single-user study tracker inspired by the "System" from *Solo Leveling*. Log f
 
 This is an original fan-made interface. It does not include or redistribute artwork from the series.
 
-## Live Demo
-
-- **Deployed:** https://solo-leveling-studytracker-idyoaoit5-rudramakwana550-7666.vercel.app
-
 ## Features
 
 - **Focus timer** with presets, pause/resume, elapsed tracking, and a post-session review step
