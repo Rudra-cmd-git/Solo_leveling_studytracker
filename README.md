@@ -6,7 +6,7 @@ This is an original fan-made interface. It does not include or redistribute artw
 
 ## Live Demo
 
-- **Deployed:** https://solo-leveling-studytracker.vercel.app
+- **Deployed:** https://solo-leveling-studytracker-idyoaoit5-rudramakwana550-7666.vercel.app
 
 ## Features
 
