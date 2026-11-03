@@ -7,8 +7,8 @@ import { SystemPanel } from "@/components/system-panel";
 import { getAppData } from "@/lib/data";
 import { formatMinutes } from "@/lib/game";
 
-export default function SessionsPage() {
-  const data = getAppData();
+export default async function SessionsPage() {
+  const data = await getAppData();
   const averageFocus =
     data.sessions.length > 0
       ? data.sessions.reduce(

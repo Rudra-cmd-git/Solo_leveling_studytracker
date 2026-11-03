@@ -21,8 +21,8 @@ import { longDate } from "@/lib/dates";
 import { formatMinutes } from "@/lib/game";
 import { formatNumber, progressUnit } from "@/lib/utils";
 
-export default function DashboardPage() {
-  const data = getAppData();
+export default async function DashboardPage() {
+  const data = await getAppData();
   const goalPercent = Math.min(
     100,
     (data.totals.todayMinutes / data.settings.dailyGoalMinutes) * 100,

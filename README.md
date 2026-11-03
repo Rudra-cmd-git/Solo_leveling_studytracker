@@ -19,7 +19,7 @@ This is an original fan-made interface. It does not include or redistribute artw
 - **Settings** for hunter name, daily goal, default timer, timezone, and chime
 - **JSON backup and restore** plus a progress reset
 - **Responsive layout** with desktop sidebar and mobile bottom navigation
-- **Fully offline** after install — no account, server, or external database
+- **Serverless-ready** — data lives in PostgreSQL, so it deploys to Vercel or any Node host
 
 ## Tech stack
 
@@ -27,23 +27,38 @@ This is an original fan-made interface. It does not include or redistribute artw
 - React 19
 - TypeScript
 - Tailwind CSS v4
-- SQLite through [`better-sqlite3`](https://github.com/WiseLibs/better-sqlite3) and [Drizzle ORM](https://orm.drizzle.team/)
+- PostgreSQL through [`pg`](https://node-postgres.com/) and [Drizzle ORM](https://orm.drizzle.team/)
 - Zod for input validation
 - Vitest for unit tests
 - Lucide icons
 
 ## Getting started
 
-Requires **Node.js 22+** and npm.
+Requires **Node.js 22+**, npm, and a PostgreSQL database (local Postgres, Neon, Vercel Postgres, Supabase, etc.).
 
 ```bash
 git clone git@github.com:Rudra-cmd-git/Solo_leveling_studytracker.git
 cd Solo_leveling_studytracker
 npm install
+cp .env.example .env.local   # then set DATABASE_URL
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). On first launch, the System asks for your Hunter name, daily study goal, and timezone.
+Set `DATABASE_URL` to your Postgres connection string:
+
+```bash
+DATABASE_URL=postgres://user:password@host:5432/database npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000). The schema and default subjects, quests, and achievements are created automatically on first use. On first launch, the System asks for your Hunter name, daily study goal, and timezone.
+
+### Deploying to Vercel
+
+1. Create a Postgres database (e.g. through the Vercel Marketplace / Neon).
+2. Add `DATABASE_URL` (the **pooled** connection string is recommended) to the Vercel project's environment variables.
+3. Deploy. Tables are created and seeded on the first request.
+
+`DATABASE_URL` (or `POSTGRES_URL`) is the only required environment variable.
 
 ## Scripts
 
@@ -59,15 +74,9 @@ Open [http://localhost:3000](http://localhost:3000). On first launch, the System
 
 ## Data and privacy
 
-Everything is stored locally in SQLite at `data/study-tracker.db`. The `data/` directory is gitignored and is created automatically on first run.
+Progress is stored in your PostgreSQL database. The connection string is read from `DATABASE_URL` (falling back to `POSTGRES_URL`). The app is single-user: every visitor shares the same hunter record, so deploy a private URL if the data matters to you.
 
-Use **Settings → Data vault → Export backup** to download a complete JSON copy of your record. **Restore backup** replaces the current record with the uploaded file. The backup is validated before anything is written, so a failed restore leaves your existing data untouched.
-
-To store the database somewhere else, set `DATABASE_PATH` before starting the app:
-
-```bash
-DATABASE_PATH=/path/to/study-tracker.db npm run dev
-```
+Use **Settings → Data vault → Export backup** to download a complete JSON copy of your record. **Restore backup** replaces the current record with the uploaded file inside a transaction. The backup is validated before anything is written, so a failed restore leaves your existing data untouched.
 
 ## How progression works
 
@@ -125,7 +134,7 @@ src/
   lib/
     data.ts             Aggregated reads for pages
     dates.ts            Timezone-safe date helpers
-    db/                 SQLite schema, bootstrap, and seed data
+    db/                 Postgres connection, schema, bootstrap, and seed data
     game.ts             XP, rank, streak, stat, and achievement logic
     types.ts            Shared types
 tests/                  Vitest unit tests

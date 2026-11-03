@@ -14,20 +14,23 @@ import { getSettingsData } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
-export function GET() {
-  const appSettings = getSettingsData();
+export async function GET() {
+  const appSettings = await getSettingsData();
+  const [player] = await db.select().from(players).execute();
+  const [appSettingsRow] = await db.select().from(settings).execute();
+
   const backup = {
     exportedAt: new Date().toISOString(),
     app: "Solo Leveling Study Tracker",
     version: 1,
-    player: db.select().from(players).get(),
-    settings: db.select().from(settings).get(),
-    subjects: db.select().from(subjects).all(),
-    sessions: db.select().from(sessions).all(),
-    quests: db.select().from(quests).all(),
-    questClaims: db.select().from(questClaims).all(),
-    achievements: db.select().from(achievements).all(),
-    playerAchievements: db.select().from(playerAchievements).all(),
+    player,
+    settings: appSettingsRow,
+    subjects: await db.select().from(subjects).execute(),
+    sessions: await db.select().from(sessions).execute(),
+    quests: await db.select().from(quests).execute(),
+    questClaims: await db.select().from(questClaims).execute(),
+    achievements: await db.select().from(achievements).execute(),
+    playerAchievements: await db.select().from(playerAchievements).execute(),
   };
 
   return new Response(JSON.stringify(backup, null, 2), {

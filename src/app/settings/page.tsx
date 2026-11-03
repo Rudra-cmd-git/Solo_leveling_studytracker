@@ -7,8 +7,8 @@ import { SystemPanel } from "@/components/system-panel";
 import { getAppData } from "@/lib/data";
 import { formatNumber } from "@/lib/utils";
 
-export default function SettingsPage() {
-  const data = getAppData();
+export default async function SettingsPage() {
+  const data = await getAppData();
   const usage = data.sessions.reduce<Record<number, number>>((counts, session) => {
     counts[session.subjectId] = (counts[session.subjectId] ?? 0) + 1;
     return counts;

@@ -1,38 +1,44 @@
-import fs from "node:fs";
-import os from "node:os";
-import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
-const databasePath = path.join(
-  os.tmpdir(),
-  `solo-actions-${process.pid}-${Date.now()}.db`,
-);
-process.env.DATABASE_PATH = databasePath;
-
 type Actions = typeof import("../src/app/actions");
-type DatabaseModule = typeof import("../src/lib/db");
+type Pglite = import("@electric-sql/pglite").PGlite;
 
 let actions: Actions;
-let dbModule: DatabaseModule;
+let pglite: Pglite;
 let today: string;
 let firstSessionId: number;
 
+async function query<T>(statement: string): Promise<T[]> {
+  const result = await pglite.query<T>(statement);
+  return result.rows;
+}
+
 beforeAll(async () => {
-  actions = await import("../src/app/actions");
-  dbModule = await import("../src/lib/db");
+  const { PGlite } = await import("@electric-sql/pglite");
+  const { drizzle } = await import("drizzle-orm/pglite");
+  const schema = await import("../src/lib/db/schema");
+  const { bootstrapDb } = await import("../src/lib/db/bootstrap");
+
+  pglite = new PGlite();
+  const testDb = drizzle(pglite, { schema });
+  await bootstrapDb(testDb);
+
+  vi.doMock("@/lib/db", () => ({
+    db: testDb,
+    ensureDbReady: async () => {},
+  }));
+
   const { todayKey } = await import("../src/lib/dates");
   today = todayKey("Asia/Kolkata");
+  actions = await import("../src/app/actions");
 });
 
-afterAll(() => {
-  dbModule?.sqlite.close();
-  for (const suffix of ["", "-shm", "-wal"]) {
-    fs.rmSync(`${databasePath}${suffix}`, { force: true });
-  }
+afterAll(async () => {
+  await pglite?.close();
 });
 
 describe("server actions", () => {
@@ -44,16 +50,17 @@ describe("server actions", () => {
     });
 
     expect(result).toEqual({ ok: true });
-    const player = dbModule.sqlite
-      .prepare("SELECT name FROM players WHERE id = 1")
-      .get() as { name: string };
-    const settings = dbModule.sqlite
-      .prepare("SELECT daily_goal_minutes, onboarded FROM settings WHERE id = 1")
-      .get() as { daily_goal_minutes: number; onboarded: number };
+    const player = await query<{ name: string }>(
+      "SELECT name FROM players WHERE id = 1",
+    );
+    const settings = await query<{
+      daily_goal_minutes: number;
+      onboarded: boolean;
+    }>("SELECT daily_goal_minutes, onboarded FROM settings WHERE id = 1");
 
-    expect(player.name).toBe("Rudra");
-    expect(settings.daily_goal_minutes).toBe(90);
-    expect(settings.onboarded).toBe(1);
+    expect(player[0].name).toBe("Rudra");
+    expect(Number(settings[0].daily_goal_minutes)).toBe(90);
+    expect(settings[0].onboarded).toBe(true);
   });
 
   it("validates onboarding input", async () => {
@@ -82,16 +89,16 @@ describe("server actions", () => {
     const invalidColor = await actions.addSubject("Geography", "red");
     expect(invalidColor.ok).toBe(false);
 
-    const history = dbModule.sqlite
-      .prepare("SELECT id FROM subjects WHERE name = 'History'")
-      .get() as { id: number };
-    const deleted = await actions.deleteSubject(history.id);
+    const history = await query<{ id: number }>(
+      "SELECT id FROM subjects WHERE name = 'History'",
+    );
+    const deleted = await actions.deleteSubject(history[0].id);
     expect(deleted).toEqual({ ok: true });
 
-    const remaining = dbModule.sqlite
-      .prepare("SELECT COUNT(*) AS count FROM subjects WHERE name = 'History'")
-      .get() as { count: number };
-    expect(remaining.count).toBe(0);
+    const remaining = await query<{ count: number | string }>(
+      "SELECT COUNT(*) AS count FROM subjects WHERE name = 'History'",
+    );
+    expect(Number(remaining[0].count)).toBe(0);
   });
 
   it("saves a session, awards XP, and unlocks an achievement", async () => {
@@ -113,13 +120,10 @@ describe("server actions", () => {
       "First Awakening",
     );
 
-    firstSessionId = Number(
-      (
-        dbModule.sqlite
-          .prepare("SELECT id FROM sessions LIMIT 1")
-          .get() as { id: number }
-      ).id,
+    const session = await query<{ id: number }>(
+      "SELECT id FROM sessions LIMIT 1",
     );
+    firstSessionId = Number(session[0].id);
   });
 
   it("rejects invalid and future sessions", async () => {
@@ -173,18 +177,18 @@ describe("server actions", () => {
   });
 
   it("claims completed quests once and rejects incomplete quests", async () => {
-    const minutesQuest = dbModule.sqlite
-      .prepare("SELECT id FROM quests WHERE code = 'daily_minutes_60'")
-      .get() as { id: number };
-    const sessionsQuest = dbModule.sqlite
-      .prepare("SELECT id FROM quests WHERE code = 'daily_sessions_2'")
-      .get() as { id: number };
-    const reflectionQuest = dbModule.sqlite
-      .prepare("SELECT id FROM quests WHERE code = 'daily_reflection_1'")
-      .get() as { id: number };
-    const weeklyQuest = dbModule.sqlite
-      .prepare("SELECT id FROM quests WHERE code = 'weekly_days_5'")
-      .get() as { id: number };
+    const [minutesQuest] = await query<{ id: number }>(
+      "SELECT id FROM quests WHERE code = 'daily_minutes_60'",
+    );
+    const [sessionsQuest] = await query<{ id: number }>(
+      "SELECT id FROM quests WHERE code = 'daily_sessions_2'",
+    );
+    const [reflectionQuest] = await query<{ id: number }>(
+      "SELECT id FROM quests WHERE code = 'daily_reflection_1'",
+    );
+    const [weeklyQuest] = await query<{ id: number }>(
+      "SELECT id FROM quests WHERE code = 'weekly_days_5'",
+    );
 
     const minutes = await actions.claimQuest(minutesQuest.id);
     expect(minutes.ok).toBe(true);
@@ -209,10 +213,10 @@ describe("server actions", () => {
     const result = await actions.deleteSubject(1);
     expect(result.ok).toBe(false);
 
-    const subject = dbModule.sqlite
-      .prepare("SELECT id FROM subjects WHERE id = 1")
-      .get() as { id: number };
-    expect(subject.id).toBe(1);
+    const subject = await query<{ id: number }>(
+      "SELECT id FROM subjects WHERE id = 1",
+    );
+    expect(subject[0].id).toBe(1);
   });
 
   it("updates settings and validates timezone", async () => {
@@ -234,60 +238,58 @@ describe("server actions", () => {
     });
     expect(result).toEqual({ ok: true });
 
-    const settings = dbModule.sqlite
-      .prepare(
-        "SELECT daily_goal_minutes, default_timer_minutes, sound_enabled FROM settings WHERE id = 1",
-      )
-      .get() as {
+    const settings = await query<{
       daily_goal_minutes: number;
       default_timer_minutes: number;
-      sound_enabled: number;
-    };
-    expect(settings.daily_goal_minutes).toBe(120);
-    expect(settings.default_timer_minutes).toBe(50);
-    expect(settings.sound_enabled).toBe(1);
+      sound_enabled: boolean;
+    }>(
+      "SELECT daily_goal_minutes, default_timer_minutes, sound_enabled FROM settings WHERE id = 1",
+    );
+    expect(Number(settings[0].daily_goal_minutes)).toBe(120);
+    expect(Number(settings[0].default_timer_minutes)).toBe(50);
+    expect(settings[0].sound_enabled).toBe(true);
   });
 
   it("deletes a session and recalculates XP", async () => {
     const result = await actions.deleteSession(firstSessionId);
     expect(result).toEqual({ ok: true });
 
-    const player = dbModule.sqlite
-      .prepare("SELECT total_xp FROM players WHERE id = 1")
-      .get() as { total_xp: number };
-    const sessions = dbModule.sqlite
-      .prepare("SELECT COUNT(*) AS count FROM sessions")
-      .get() as { count: number };
+    const [player] = await query<{ total_xp: number }>(
+      "SELECT total_xp FROM players WHERE id = 1",
+    );
+    const [sessions] = await query<{ count: number | string }>(
+      "SELECT COUNT(*) AS count FROM sessions",
+    );
 
-    expect(player.total_xp).toBe(421);
-    expect(sessions.count).toBe(1);
+    expect(Number(player.total_xp)).toBe(421);
+    expect(Number(sessions.count)).toBe(1);
   });
 
   it("resets progress while keeping subjects and settings", async () => {
     const result = await actions.resetProgress();
     expect(result).toEqual({ ok: true });
 
-    const player = dbModule.sqlite
-      .prepare("SELECT name, total_xp FROM players WHERE id = 1")
-      .get() as { name: string; total_xp: number };
-    const sessions = dbModule.sqlite
-      .prepare("SELECT COUNT(*) AS count FROM sessions")
-      .get() as { count: number };
-    const claims = dbModule.sqlite
-      .prepare("SELECT COUNT(*) AS count FROM quest_claims")
-      .get() as { count: number };
-    const achievements = dbModule.sqlite
-      .prepare("SELECT COUNT(*) AS count FROM player_achievements")
-      .get() as { count: number };
-    const subjects = dbModule.sqlite
-      .prepare("SELECT COUNT(*) AS count FROM subjects")
-      .get() as { count: number };
+    const [player] = await query<{ name: string; total_xp: number }>(
+      "SELECT name, total_xp FROM players WHERE id = 1",
+    );
+    const [sessions] = await query<{ count: number | string }>(
+      "SELECT COUNT(*) AS count FROM sessions",
+    );
+    const [claims] = await query<{ count: number | string }>(
+      "SELECT COUNT(*) AS count FROM quest_claims",
+    );
+    const [achievements] = await query<{ count: number | string }>(
+      "SELECT COUNT(*) AS count FROM player_achievements",
+    );
+    const [subjects] = await query<{ count: number | string }>(
+      "SELECT COUNT(*) AS count FROM subjects",
+    );
 
     expect(player.name).toBe("Rudra Makwana");
-    expect(player.total_xp).toBe(0);
-    expect(sessions.count).toBe(0);
-    expect(claims.count).toBe(0);
-    expect(achievements.count).toBe(0);
-    expect(subjects.count).toBe(4);
+    expect(Number(player.total_xp)).toBe(0);
+    expect(Number(sessions.count)).toBe(0);
+    expect(Number(claims.count)).toBe(0);
+    expect(Number(achievements.count)).toBe(0);
+    expect(Number(subjects.count)).toBe(4);
   });
 });

@@ -1,10 +1,30 @@
 import { revalidatePath } from "next/cache";
+import { eq, sql } from "drizzle-orm";
 import { backupSchema } from "@/lib/backup";
-import { sqlite } from "@/lib/db";
+import { db, ensureDbReady } from "@/lib/db";
+import {
+  achievements,
+  playerAchievements,
+  players,
+  questClaims,
+  quests,
+  sessions,
+  settings,
+  subjects,
+} from "@/lib/db/schema";
 
 export const dynamic = "force-dynamic";
 
 const MAX_BYTES = 5 * 1024 * 1024;
+
+const SERIAL_TABLES = [
+  "subjects",
+  "sessions",
+  "quests",
+  "quest_claims",
+  "achievements",
+  "player_achievements",
+];
 
 function jsonError(message: string, status: number) {
   return Response.json({ ok: false, error: message }, { status });
@@ -70,166 +90,157 @@ export async function POST(request: Request) {
     );
   }
 
+  await ensureDbReady();
+
   try {
-    sqlite.transaction(() => {
-      sqlite.exec(`
-        DELETE FROM player_achievements;
-        DELETE FROM quest_claims;
-        DELETE FROM sessions;
-        DELETE FROM subjects;
-        DELETE FROM quests;
-        DELETE FROM achievements;
-        DELETE FROM players;
-        DELETE FROM settings;
-      `);
+    await db.transaction(async (tx) => {
+      await tx.delete(playerAchievements).execute();
+      await tx.delete(questClaims).execute();
+      await tx.delete(sessions).execute();
+      await tx.delete(subjects).execute();
+      await tx.delete(quests).execute();
+      await tx.delete(achievements).execute();
+      await tx.delete(players).execute();
+      await tx.delete(settings).execute();
 
-      const insertPlayer = sqlite.prepare(
-        "INSERT INTO players (id, name, total_xp, created_at) VALUES (?, ?, ?, ?)",
-      );
-      insertPlayer.run(
-        data.player.id,
-        data.player.name,
-        data.player.totalXp,
-        data.player.createdAt,
-      );
+      await tx.insert(players).values({
+        id: data.player.id,
+        name: data.player.name,
+        totalXp: data.player.totalXp,
+        createdAt: data.player.createdAt,
+      }).execute();
 
-      const insertSettings = sqlite.prepare(
-        `INSERT INTO settings
-         (id, daily_goal_minutes, default_timer_minutes, timezone, sound_enabled, onboarded)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-      );
-      insertSettings.run(
-        data.settings.id,
-        data.settings.dailyGoalMinutes,
-        data.settings.defaultTimerMinutes,
-        data.settings.timezone,
-        data.settings.soundEnabled ? 1 : 0,
-        data.settings.onboarded ? 1 : 0,
-      );
+      await tx.insert(settings).values({
+        id: data.settings.id,
+        dailyGoalMinutes: data.settings.dailyGoalMinutes,
+        defaultTimerMinutes: data.settings.defaultTimerMinutes,
+        timezone: data.settings.timezone,
+        soundEnabled: data.settings.soundEnabled,
+        onboarded: data.settings.onboarded,
+      }).execute();
 
-      const insertSubject = sqlite.prepare(
-        "INSERT INTO subjects (id, name, color, created_at) VALUES (?, ?, ?, ?)",
-      );
-      for (const subject of data.subjects) {
-        insertSubject.run(
-          subject.id,
-          subject.name,
-          subject.color,
-          subject.createdAt,
+      await tx.insert(subjects).values(
+        data.subjects.map((subject) => ({
+          id: subject.id,
+          name: subject.name,
+          color: subject.color,
+          createdAt: subject.createdAt,
+        })),
+      ).execute();
+
+      if (data.sessions.length > 0) {
+        await tx.insert(sessions).values(
+          data.sessions.map((session) => ({
+            id: session.id,
+            subjectId: session.subjectId,
+            topic: session.topic,
+            notes: session.notes,
+            durationMinutes: session.durationMinutes,
+            focusRating: session.focusRating,
+            xpEarned: session.xpEarned,
+            studiedAt: session.studiedAt,
+            createdAt: session.createdAt,
+          })),
+        ).execute();
+      }
+
+      if (data.quests.length > 0) {
+        await tx.insert(quests).values(
+          data.quests.map((quest) => ({
+            id: quest.id,
+            code: quest.code,
+            title: quest.title,
+            description: quest.description,
+            metric: quest.metric,
+            period: quest.period,
+            target: quest.target,
+            xpReward: quest.xpReward,
+            active: quest.active,
+            sortOrder: quest.sortOrder,
+          })),
+        ).execute();
+      }
+
+      if (data.questClaims.length > 0) {
+        await tx.insert(questClaims).values(
+          data.questClaims.map((claim) => ({
+            id: claim.id,
+            questId: claim.questId,
+            periodKey: claim.periodKey,
+            claimedAt: claim.claimedAt,
+          })),
+        ).execute();
+      }
+
+      if (data.achievements.length > 0) {
+        await tx.insert(achievements).values(
+          data.achievements.map((achievement) => ({
+            id: achievement.id,
+            code: achievement.code,
+            title: achievement.title,
+            description: achievement.description,
+            icon: achievement.icon,
+            condition: achievement.condition,
+            threshold: achievement.threshold,
+            xpReward: achievement.xpReward,
+            sortOrder: achievement.sortOrder,
+          })),
+        ).execute();
+      }
+
+      if (data.playerAchievements.length > 0) {
+        await tx.insert(playerAchievements).values(
+          data.playerAchievements.map((entry) => ({
+            id: entry.id,
+            achievementId: entry.achievementId,
+            unlockedAt: entry.unlockedAt,
+          })),
+        ).execute();
+      }
+
+      for (const table of SERIAL_TABLES) {
+        await tx.execute(
+          sql.raw(
+            `SELECT setval(pg_get_serial_sequence('${table}', 'id'), COALESCE(MAX(id), 1)) FROM ${table}`,
+          ),
         );
       }
 
-      const insertSession = sqlite.prepare(
-        `INSERT INTO sessions
-         (id, subject_id, topic, notes, duration_minutes, focus_rating, xp_earned, studied_at, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      );
-      for (const session of data.sessions) {
-        insertSession.run(
-          session.id,
-          session.subjectId,
-          session.topic,
-          session.notes,
-          session.durationMinutes,
-          session.focusRating,
-          session.xpEarned,
-          session.studiedAt,
-          session.createdAt,
-        );
-      }
+      const [sessionRow] = await tx
+        .select({
+          value: sql<number>`coalesce(sum(${sessions.xpEarned}), 0)`,
+        })
+        .from(sessions)
+        .execute();
+      const [claimRow] = await tx
+        .select({
+          value: sql<number>`coalesce(sum(${quests.xpReward}), 0)`,
+        })
+        .from(questClaims)
+        .innerJoin(quests, eq(questClaims.questId, quests.id))
+        .execute();
+      const [achievementRow] = await tx
+        .select({
+          value: sql<number>`coalesce(sum(${achievements.xpReward}), 0)`,
+        })
+        .from(playerAchievements)
+        .innerJoin(
+          achievements,
+          eq(playerAchievements.achievementId, achievements.id),
+        )
+        .execute();
 
-      const insertQuest = sqlite.prepare(
-        `INSERT INTO quests
-         (id, code, title, description, metric, period, target, xp_reward, active, sort_order)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      );
-      for (const quest of data.quests) {
-        insertQuest.run(
-          quest.id,
-          quest.code,
-          quest.title,
-          quest.description,
-          quest.metric,
-          quest.period,
-          quest.target,
-          quest.xpReward,
-          quest.active ? 1 : 0,
-          quest.sortOrder,
-        );
-      }
+      const totalXp =
+        Number(sessionRow?.value ?? 0) +
+        Number(claimRow?.value ?? 0) +
+        Number(achievementRow?.value ?? 0);
 
-      const insertClaim = sqlite.prepare(
-        "INSERT INTO quest_claims (id, quest_id, period_key, claimed_at) VALUES (?, ?, ?, ?)",
-      );
-      for (const claim of data.questClaims) {
-        insertClaim.run(
-          claim.id,
-          claim.questId,
-          claim.periodKey,
-          claim.claimedAt,
-        );
-      }
-
-      const insertAchievement = sqlite.prepare(
-        `INSERT INTO achievements
-         (id, code, title, description, icon, condition, threshold, xp_reward, sort_order)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      );
-      for (const achievement of data.achievements) {
-        insertAchievement.run(
-          achievement.id,
-          achievement.code,
-          achievement.title,
-          achievement.description,
-          achievement.icon,
-          achievement.condition,
-          achievement.threshold,
-          achievement.xpReward,
-          achievement.sortOrder,
-        );
-      }
-
-      const insertPlayerAchievement = sqlite.prepare(
-        "INSERT INTO player_achievements (id, achievement_id, unlocked_at) VALUES (?, ?, ?)",
-      );
-      for (const entry of data.playerAchievements) {
-        insertPlayerAchievement.run(
-          entry.id,
-          entry.achievementId,
-          entry.unlockedAt,
-        );
-      }
-
-      const sessionXp =
-        (
-          sqlite
-            .prepare("SELECT COALESCE(SUM(xp_earned), 0) AS value FROM sessions")
-            .get() as { value: number }
-        ).value ?? 0;
-      const claimXp =
-        (
-          sqlite
-            .prepare(
-              `SELECT COALESCE(SUM(q.xp_reward), 0) AS value
-               FROM quest_claims c JOIN quests q ON q.id = c.quest_id`,
-            )
-            .get() as { value: number }
-        ).value ?? 0;
-      const achievementXp =
-        (
-          sqlite
-            .prepare(
-              `SELECT COALESCE(SUM(a.xp_reward), 0) AS value
-               FROM player_achievements p
-               JOIN achievements a ON a.id = p.achievement_id`,
-            )
-            .get() as { value: number }
-        ).value ?? 0;
-
-      sqlite
-        .prepare("UPDATE players SET total_xp = ? WHERE id = ?")
-        .run(sessionXp + claimXp + achievementXp, data.player.id);
-    })();
+      await tx
+        .update(players)
+        .set({ totalXp })
+        .where(eq(players.id, data.player.id))
+        .execute();
+    });
   } catch {
     return jsonError(
       "The backup could not be restored. Your existing data was kept.",

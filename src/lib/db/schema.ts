@@ -1,34 +1,33 @@
 import {
+  boolean,
+  index,
   integer,
-  sqliteTable,
+  pgTable,
+  serial,
   text,
   uniqueIndex,
-} from "drizzle-orm/sqlite-core";
+} from "drizzle-orm/pg-core";
 
-export const players = sqliteTable("players", {
+export const players = pgTable("players", {
   id: integer("id").primaryKey(),
   name: text("name").notNull().default("Hunter"),
   totalXp: integer("total_xp").notNull().default(0),
   createdAt: text("created_at").notNull(),
 });
 
-export const settings = sqliteTable("settings", {
+export const settings = pgTable("settings", {
   id: integer("id").primaryKey(),
   dailyGoalMinutes: integer("daily_goal_minutes").notNull().default(60),
   defaultTimerMinutes: integer("default_timer_minutes").notNull().default(25),
   timezone: text("timezone").notNull().default("Asia/Kolkata"),
-  soundEnabled: integer("sound_enabled", { mode: "boolean" })
-    .notNull()
-    .default(false),
-  onboarded: integer("onboarded", { mode: "boolean" })
-    .notNull()
-    .default(false),
+  soundEnabled: boolean("sound_enabled").notNull().default(false),
+  onboarded: boolean("onboarded").notNull().default(false),
 });
 
-export const subjects = sqliteTable(
+export const subjects = pgTable(
   "subjects",
   {
-    id: integer("id").primaryKey({ autoIncrement: true }),
+    id: serial("id").primaryKey(),
     name: text("name").notNull(),
     color: text("color").notNull().default("#43a9ff"),
     createdAt: text("created_at").notNull(),
@@ -36,10 +35,10 @@ export const subjects = sqliteTable(
   (table) => [uniqueIndex("subjects_name_idx").on(table.name)],
 );
 
-export const sessions = sqliteTable(
+export const sessions = pgTable(
   "sessions",
   {
-    id: integer("id").primaryKey({ autoIncrement: true }),
+    id: serial("id").primaryKey(),
     subjectId: integer("subject_id")
       .notNull()
       .references(() => subjects.id),
@@ -51,15 +50,13 @@ export const sessions = sqliteTable(
     studiedAt: text("studied_at").notNull(),
     createdAt: text("created_at").notNull(),
   },
-  (table) => [
-    uniqueIndex("sessions_date_idx").on(table.id, table.studiedAt),
-  ],
+  (table) => [index("sessions_studied_at_idx").on(table.studiedAt)],
 );
 
-export const quests = sqliteTable(
+export const quests = pgTable(
   "quests",
   {
-    id: integer("id").primaryKey({ autoIncrement: true }),
+    id: serial("id").primaryKey(),
     code: text("code").notNull(),
     title: text("title").notNull(),
     description: text("description").notNull(),
@@ -67,16 +64,16 @@ export const quests = sqliteTable(
     period: text("period").notNull(),
     target: integer("target").notNull(),
     xpReward: integer("xp_reward").notNull(),
-    active: integer("active", { mode: "boolean" }).notNull().default(true),
+    active: boolean("active").notNull().default(true),
     sortOrder: integer("sort_order").notNull().default(0),
   },
   (table) => [uniqueIndex("quests_code_idx").on(table.code)],
 );
 
-export const questClaims = sqliteTable(
+export const questClaims = pgTable(
   "quest_claims",
   {
-    id: integer("id").primaryKey({ autoIncrement: true }),
+    id: serial("id").primaryKey(),
     questId: integer("quest_id")
       .notNull()
       .references(() => quests.id, { onDelete: "cascade" }),
@@ -91,10 +88,10 @@ export const questClaims = sqliteTable(
   ],
 );
 
-export const achievements = sqliteTable(
+export const achievements = pgTable(
   "achievements",
   {
-    id: integer("id").primaryKey({ autoIncrement: true }),
+    id: serial("id").primaryKey(),
     code: text("code").notNull(),
     title: text("title").notNull(),
     description: text("description").notNull(),
@@ -107,10 +104,10 @@ export const achievements = sqliteTable(
   (table) => [uniqueIndex("achievements_code_idx").on(table.code)],
 );
 
-export const playerAchievements = sqliteTable(
+export const playerAchievements = pgTable(
   "player_achievements",
   {
-    id: integer("id").primaryKey({ autoIncrement: true }),
+    id: serial("id").primaryKey(),
     achievementId: integer("achievement_id")
       .notNull()
       .references(() => achievements.id, { onDelete: "cascade" }),
