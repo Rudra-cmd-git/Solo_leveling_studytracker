@@ -295,7 +295,12 @@ function ensureLocalDirectory(url: string): void {
   const filePath = url.slice("file:".length);
   if (!filePath || filePath === ":memory:") return;
 
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  try {
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  } catch {
+    // Read-only filesystem (e.g. Vercel) — proceed and let the client fail
+    // at query time if a real connection cannot be made.
+  }
 }
 
 function createDatabaseClient(): Client {

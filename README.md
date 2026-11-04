@@ -77,9 +77,9 @@ To store the local file somewhere else, set `DATABASE_PATH` instead:
 DATABASE_PATH=/path/to/study-tracker.db npm run dev
 ```
 
-## Deploying
+## Deploying to Vercel
 
-The app is ready to deploy to Vercel, but it needs a hosted libSQL database because Vercel's filesystem is read-only and serverless instances do not share local files.
+This app needs a hosted libSQL database because Vercel's filesystem is read-only.
 
 1. Create a [Turso](https://turso.tech/) database and copy its URL and auth token:
 
@@ -89,14 +89,16 @@ The app is ready to deploy to Vercel, but it needs a hosted libSQL database beca
    turso db tokens create solo-leveling
    ```
 
-2. In your Vercel project, open **Settings → Environment Variables** and add for all environments:
+2. Copy `.env.example` to `.env.local` locally (optional) or add these variables directly in Vercel:
 
    | Variable | Value |
    | --- | --- |
    | `TURSO_DATABASE_URL` | the `libsql://…` URL |
    | `TURSO_AUTH_TOKEN` | the generated token |
 
-3. Redeploy. Tables and default quests/achievements are created automatically on the first request.
+3. Push to GitHub, import the repo on [Vercel](https://vercel.com/new), add both environment variables under **Settings → Environment Variables** (all environments), and redeploy.
+
+Tables and default quests/achievements are created automatically on the first request.
 
 ## How progression works
 
