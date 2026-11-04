@@ -98,7 +98,7 @@ This app needs a hosted libSQL database because Vercel's filesystem is read-only
 
 3. Push to GitHub, import the repo on [Vercel](https://vercel.com/new), add both environment variables under **Settings → Environment Variables** (all environments), and redeploy.
 
-Tables and default quests/achievements are created automatically on the first request.
+Your app will be live at https://solo-leveling-studytracker.vercel.app/. Tables and default quests/achievements are created automatically on the first request.
 
 ## How progression works
 
