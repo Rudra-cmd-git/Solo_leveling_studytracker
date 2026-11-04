@@ -16,6 +16,7 @@ const settingsSchema = z.object({
   defaultTimerMinutes: z.number().int().min(5).max(180),
   timezone: z.string().min(1),
   soundEnabled: z.boolean(),
+  xpBonusesEnabled: z.boolean().optional().default(false),
   onboarded: z.boolean(),
 });
 
@@ -47,8 +48,15 @@ const questSchema = z.object({
   period: z.string().min(1),
   target: z.number().int().positive(),
   xpReward: z.number().int().min(0),
+  subjectId: idSchema.nullable().optional(),
   active: z.boolean(),
   sortOrder: z.number().int(),
+});
+
+const streakFreezeSchema = z.object({
+  id: idSchema,
+  dateKey: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  createdAt: timestampSchema,
 });
 
 const questClaimSchema = z.object({
@@ -88,6 +96,7 @@ export const backupSchema = z.object({
   questClaims: z.array(questClaimSchema),
   achievements: z.array(achievementSchema),
   playerAchievements: z.array(playerAchievementSchema),
+  streakFreezes: z.array(streakFreezeSchema).optional().default([]),
 });
 
 export type BackupData = z.infer<typeof backupSchema>;

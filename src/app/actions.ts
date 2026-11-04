@@ -12,6 +12,7 @@ import {
   quests,
   sessions,
   settings,
+  streakFreezes,
   subjects,
 } from "@/lib/db/schema";
 import {
@@ -23,8 +24,11 @@ import {
 } from "@/lib/dates";
 import {
   calculateStreaks,
+  freezeCandidate,
   isAchievementEarned,
+  isWeekendDate,
   progressFromXp,
+  sessionReward,
   sessionXp,
   type AchievementContext,
 } from "@/lib/game";
@@ -61,6 +65,7 @@ const settingsSchema = z.object({
     .min(1)
     .refine(isValidTimeZone, "Choose a valid timezone."),
   soundEnabled: z.boolean(),
+  xpBonusesEnabled: z.boolean().optional(),
 });
 
 const onboardingSchema = z.object({
@@ -98,6 +103,50 @@ async function getPlayerTotalXp(): Promise<number> {
     .from(players)
     .where(eq(players.id, 1));
   return row?.totalXp ?? 0;
+}
+
+async function getXpBonusesEnabled(): Promise<boolean> {
+  const [row] = await db
+    .select({ xpBonusesEnabled: settings.xpBonusesEnabled })
+    .from(settings)
+    .where(eq(settings.id, 1));
+  return row?.xpBonusesEnabled ?? false;
+}
+
+async function getFrozenDates(): Promise<string[]> {
+  const rows = await db.select({ dateKey: streakFreezes.dateKey }).from(streakFreezes);
+  return rows.map((row) => row.dateKey);
+}
+
+async function computeSessionXp(
+  studiedAt: string,
+  durationMinutes: number,
+  focusRating: number,
+  excludeSessionId?: number,
+): Promise<number> {
+  if (!(await getXpBonusesEnabled())) {
+    return sessionXp(durationMinutes, focusRating);
+  }
+
+  const rows = await db
+    .select({ id: sessions.id, studiedAt: sessions.studiedAt })
+    .from(sessions);
+  const otherDates = rows
+    .filter((row) => row.id !== excludeSessionId)
+    .map((row) => row.studiedAt);
+  const frozenDates = await getFrozenDates();
+  const timezone = await getTimeZone();
+  const currentStreak = calculateStreaks(
+    [...otherDates, studiedAt],
+    todayKey(timezone),
+    frozenDates,
+  ).current;
+
+  return sessionReward(durationMinutes, focusRating, {
+    currentStreak,
+    isFirstOfDay: !otherDates.includes(studiedAt),
+    isWeekend: isWeekendDate(studiedAt),
+  }).total;
 }
 
 async function recalculateTotalXp(): Promise<number> {
@@ -153,9 +202,11 @@ async function getAchievementContext(): Promise<AchievementContext> {
     0,
   );
   const timezone = await getTimeZone();
+  const frozenDates = await getFrozenDates();
   const streak = calculateStreaks(
     sessionRows.map((session) => session.studiedAt),
     todayKey(timezone),
+    frozenDates,
   );
 
   return {
@@ -264,7 +315,11 @@ export async function saveSession(input: SessionInput): Promise<SessionResult> {
     return { ok: false, error: "Study date cannot be in the future." };
   }
 
-  const xp = sessionXp(parsed.data.durationMinutes, parsed.data.focusRating);
+  const xp = await computeSessionXp(
+    parsed.data.studiedAt,
+    parsed.data.durationMinutes,
+    parsed.data.focusRating,
+  );
   const totalXpBefore = await getPlayerTotalXp();
 
   await db.insert(sessions).values({
@@ -277,6 +332,74 @@ export async function saveSession(input: SessionInput): Promise<SessionResult> {
     studiedAt: parsed.data.studiedAt,
     createdAt: new Date().toISOString(),
   });
+
+  await recalculateTotalXp();
+  const achievementAwards = await syncAchievements();
+  const totalXpAfter = await getPlayerTotalXp();
+  const result = nextLevelResult(totalXpBefore, totalXpAfter, achievementAwards);
+
+  revalidateAll();
+
+  return {
+    ok: true,
+    xpEarned: xp,
+    ...result,
+  };
+}
+
+export async function updateSession(
+  id: number,
+  input: SessionInput,
+): Promise<SessionResult> {
+  const sessionId = Number(id);
+  if (!Number.isInteger(sessionId) || sessionId <= 0) {
+    return { ok: false, error: "Invalid session." };
+  }
+
+  const parsed = sessionSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: firstIssue(parsed.error) };
+
+  await ensureDatabase();
+
+  const [existing] = await db
+    .select({ id: sessions.id })
+    .from(sessions)
+    .where(eq(sessions.id, sessionId));
+
+  if (!existing) return { ok: false, error: "That session no longer exists." };
+
+  const [subject] = await db
+    .select({ id: subjects.id })
+    .from(subjects)
+    .where(eq(subjects.id, parsed.data.subjectId));
+
+  if (!subject) return { ok: false, error: "That subject no longer exists." };
+
+  const today = todayKey(await getTimeZone());
+  if (parsed.data.studiedAt > today) {
+    return { ok: false, error: "Study date cannot be in the future." };
+  }
+
+  const xp = await computeSessionXp(
+    parsed.data.studiedAt,
+    parsed.data.durationMinutes,
+    parsed.data.focusRating,
+    sessionId,
+  );
+  const totalXpBefore = await getPlayerTotalXp();
+
+  await db
+    .update(sessions)
+    .set({
+      subjectId: parsed.data.subjectId,
+      topic: parsed.data.topic,
+      notes: parsed.data.notes,
+      durationMinutes: parsed.data.durationMinutes,
+      focusRating: parsed.data.focusRating,
+      xpEarned: xp,
+      studiedAt: parsed.data.studiedAt,
+    })
+    .where(eq(sessions.id, sessionId));
 
   await recalculateTotalXp();
   const achievementAwards = await syncAchievements();
@@ -307,23 +430,29 @@ export async function deleteSession(id: number): Promise<ActionResult> {
   return { ok: true };
 }
 
-async function relevantQuestSessions(period: string, timezone: string) {
+async function relevantQuestSessions(
+  period: string,
+  timezone: string,
+  subjectId: number | null,
+) {
   const today = todayKey(timezone);
   const week = weekKeyFor(today);
   const weekEnd = addDays(week, 6);
   const sessionRows = await db
     .select({
+      subjectId: sessions.subjectId,
       durationMinutes: sessions.durationMinutes,
       notes: sessions.notes,
       studiedAt: sessions.studiedAt,
     })
     .from(sessions);
 
-  return sessionRows.filter((session) =>
-    period === "daily"
+  return sessionRows.filter((session) => {
+    if (subjectId !== null && session.subjectId !== subjectId) return false;
+    return period === "daily"
       ? session.studiedAt === today
-      : session.studiedAt >= week && session.studiedAt <= weekEnd,
-  );
+      : session.studiedAt >= week && session.studiedAt <= weekEnd;
+  });
 }
 
 function computeQuestProgress(
@@ -384,7 +513,11 @@ export async function claimQuest(questId: number): Promise<QuestResult> {
     return { ok: false, error: "This quest reward has already been claimed." };
   }
 
-  const relevant = await relevantQuestSessions(quest.period, timezone);
+  const relevant = await relevantQuestSessions(
+    quest.period,
+    timezone,
+    quest.subjectId ?? null,
+  );
   const progress = computeQuestProgress(quest.metric, relevant);
   if (progress < quest.target) {
     return { ok: false, error: "Quest requirements are not complete yet." };
@@ -411,6 +544,50 @@ export async function claimQuest(questId: number): Promise<QuestResult> {
   };
 }
 
+export async function activateStreakFreeze(): Promise<ActionResult> {
+  await ensureDatabase();
+
+  const timezone = await getTimeZone();
+  const today = todayKey(timezone);
+  const freezeRows = await db.select().from(streakFreezes);
+  const frozenDates = freezeRows.map((row) => row.dateKey);
+  const sessionRows = await db
+    .select({ studiedAt: sessions.studiedAt })
+    .from(sessions);
+  const candidate = freezeCandidate(
+    sessionRows.map((row) => row.studiedAt),
+    today,
+    frozenDates,
+  );
+
+  if (!candidate) {
+    return {
+      ok: false,
+      error: "Your streak is not at risk, or one freeze cannot restore it.",
+    };
+  }
+
+  const candidateWeek = weekKeyFor(candidate);
+  if (frozenDates.some((dateKey) => weekKeyFor(dateKey) === candidateWeek)) {
+    return {
+      ok: false,
+      error: "A streak freeze was already used this week.",
+    };
+  }
+
+  try {
+    await db.insert(streakFreezes).values({
+      dateKey: candidate,
+      createdAt: new Date().toISOString(),
+    });
+  } catch {
+    return { ok: false, error: "Could not activate the streak freeze." };
+  }
+
+  revalidateAll();
+  return { ok: true };
+}
+
 export async function updateSettings(
   input: SettingsInput,
 ): Promise<ActionResult> {
@@ -431,6 +608,7 @@ export async function updateSettings(
       defaultTimerMinutes: parsed.data.defaultTimerMinutes,
       timezone: parsed.data.timezone,
       soundEnabled: parsed.data.soundEnabled,
+      xpBonusesEnabled: parsed.data.xpBonusesEnabled ?? false,
     })
     .where(eq(settings.id, 1));
 
@@ -521,6 +699,7 @@ export async function resetProgress(): Promise<ActionResult> {
   await db.delete(sessions);
   await db.delete(questClaims);
   await db.delete(playerAchievements);
+  await db.delete(streakFreezes);
   await db.update(players).set({ totalXp: 0 }).where(eq(players.id, 1));
   revalidateAll();
   return { ok: true };

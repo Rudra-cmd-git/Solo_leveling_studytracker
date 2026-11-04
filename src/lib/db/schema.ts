@@ -20,6 +20,9 @@ export const settings = sqliteTable("settings", {
   soundEnabled: integer("sound_enabled", { mode: "boolean" })
     .notNull()
     .default(false),
+  xpBonusesEnabled: integer("xp_bonuses_enabled", { mode: "boolean" })
+    .notNull()
+    .default(false),
   onboarded: integer("onboarded", { mode: "boolean" })
     .notNull()
     .default(false),
@@ -67,10 +70,21 @@ export const quests = sqliteTable(
     period: text("period").notNull(),
     target: integer("target").notNull(),
     xpReward: integer("xp_reward").notNull(),
+    subjectId: integer("subject_id").references(() => subjects.id),
     active: integer("active", { mode: "boolean" }).notNull().default(true),
     sortOrder: integer("sort_order").notNull().default(0),
   },
   (table) => [uniqueIndex("quests_code_idx").on(table.code)],
+);
+
+export const streakFreezes = sqliteTable(
+  "streak_freezes",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    dateKey: text("date_key").notNull(),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [uniqueIndex("streak_freezes_date_idx").on(table.dateKey)],
 );
 
 export const questClaims = sqliteTable(

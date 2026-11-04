@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
   Check,
+  Coffee,
   Pause,
   Play,
   RotateCcw,
@@ -13,9 +14,10 @@ import {
   Square,
   Timer,
   X,
+  Zap,
 } from "lucide-react";
 import { saveSession } from "@/app/actions";
-import { RANKS, sessionXp } from "@/lib/game";
+import { RANKS, breakKindForCycle, sessionXp } from "@/lib/game";
 import { elapsedClock } from "@/lib/dates";
 import type { SubjectData, SessionResult } from "@/lib/types";
 import { cn, focusLabel, formatNumber } from "@/lib/utils";
@@ -23,7 +25,7 @@ import { RewardOverlay, type RewardState } from "./reward-overlay";
 import { SystemPanel } from "./system-panel";
 import { SystemToast, type ToastState } from "./system-toast";
 
-type Phase = "idle" | "running" | "paused" | "review";
+type Phase = "idle" | "running" | "paused" | "review" | "break";
 
 const PRESETS = [25, 50, 90];
 
@@ -54,40 +56,32 @@ export function FocusTimer({
   const [toast, setToast] = useState<ToastState | null>(null);
   const [reward, setReward] = useState<RewardState | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  const [pomodoro, setPomodoro] = useState(false);
+  const [shortBreak, setShortBreak] = useState(5);
+  const [longBreak, setLongBreak] = useState(15);
+  const [cyclesBeforeLongBreak, setCyclesBeforeLongBreak] = useState(4);
+  const [completedCycles, setCompletedCycles] = useState(0);
+  const [breakTotal, setBreakTotal] = useState(0);
+  const [breakLong, setBreakLong] = useState(false);
+
   const endAtRef = useRef<number | null>(null);
+  const workDoneRef = useRef(false);
+  const autoSavingRef = useRef(false);
+  const finishWorkRef = useRef<() => void>(() => {});
+  const finishBreakRef = useRef<() => void>(() => {});
   const router = useRouter();
 
-  useEffect(() => {
-    if (phase !== "running") return;
-
-    const interval = window.setInterval(() => {
-      const endAt = endAtRef.current ?? Date.now();
-      const nextRemaining = Math.max(
-        0,
-        Math.ceil((endAt - Date.now()) / 1000),
-      );
-      setRemaining(nextRemaining);
-
-      if (nextRemaining <= 0) {
-        window.clearInterval(interval);
-        endAtRef.current = null;
-        setElapsedSeconds(duration * 60);
-        setPhase("review");
-        if (soundEnabled) playSystemChime();
-      }
-    }, 250);
-
-    return () => window.clearInterval(interval);
-  }, [phase, duration, soundEnabled]);
-
   const totalSeconds = duration * 60;
+  const activeTotal = phase === "break" ? breakTotal : totalSeconds;
   const progress =
-    totalSeconds > 0 ? Math.max(0, Math.min(1, remaining / totalSeconds)) : 0;
+    activeTotal > 0 ? Math.max(0, Math.min(1, remaining / activeTotal)) : 0;
   const circumference = 2 * Math.PI * 138;
   const selectedSubject = subjects.find((subject) => subject.id === subjectId);
   const logMinutes = Math.max(1, Math.round(elapsedSeconds / 60));
   const estimatedXp = sessionXp(logMinutes, focusRating);
-  const isLocked = phase === "running" || phase === "paused";
+  const isLocked =
+    phase === "running" || phase === "paused" || phase === "break";
 
   function selectDuration(minutes: number) {
     if (isLocked) return;
@@ -108,6 +102,7 @@ export function FocusTimer({
     }
 
     const seconds = remaining > 0 ? remaining : totalSeconds;
+    workDoneRef.current = false;
     setRemaining(seconds);
     endAtRef.current = Date.now() + seconds * 1000;
     setPhase("running");
@@ -125,16 +120,21 @@ export function FocusTimer({
   }
 
   function resume() {
+    workDoneRef.current = false;
     endAtRef.current = Date.now() + remaining * 1000;
     setPhase("running");
   }
 
   function reset() {
     endAtRef.current = null;
+    workDoneRef.current = false;
     setPhase("idle");
     setRemaining(totalSeconds);
     setElapsedSeconds(0);
     setNotes("");
+    setBreakTotal(0);
+    setCompletedCycles(0);
+    setBreakLong(false);
   }
 
   function finishEarly() {
@@ -154,9 +154,139 @@ export function FocusTimer({
     }
 
     endAtRef.current = null;
+    workDoneRef.current = true;
     setRemaining(remainingNow);
     setElapsedSeconds(elapsed);
-    setPhase("review");
+
+    if (pomodoro) {
+      autoSave(Math.max(1, Math.round(elapsed / 60)));
+      beginBreak();
+    } else {
+      setPhase("review");
+    }
+  }
+
+  function beginBreak() {
+    const nextCycles = completedCycles + 1;
+    const isLong =
+      breakKindForCycle(nextCycles, cyclesBeforeLongBreak) === "long";
+    const minutes = isLong ? longBreak : shortBreak;
+
+    setCompletedCycles(nextCycles);
+    setBreakLong(isLong);
+    setBreakTotal(minutes * 60);
+    setRemaining(minutes * 60);
+    endAtRef.current = Date.now() + minutes * 60 * 1000;
+    setPhase("break");
+    if (soundEnabled) playSystemChime();
+  }
+
+  function finishBreak() {
+    endAtRef.current = null;
+    setBreakTotal(0);
+    setRemaining(totalSeconds);
+    setElapsedSeconds(0);
+    setPhase("idle");
+    if (soundEnabled) playSystemChime();
+    setToast({
+      title: "Break complete",
+      message: "Recovery recorded. Return to the gate when ready.",
+      tone: "system",
+    });
+  }
+
+  function completeWork() {
+    if (workDoneRef.current) return;
+    workDoneRef.current = true;
+    setElapsedSeconds(duration * 60);
+
+    if (pomodoro) {
+      autoSave(duration);
+      beginBreak();
+    } else {
+      setPhase("review");
+      if (soundEnabled) playSystemChime();
+    }
+  }
+
+  useEffect(() => {
+    finishWorkRef.current = completeWork;
+    finishBreakRef.current = finishBreak;
+  });
+
+  useEffect(() => {
+    if (phase !== "running" && phase !== "break") return;
+
+    const interval = window.setInterval(() => {
+      const endAt = endAtRef.current ?? Date.now();
+      const nextRemaining = Math.max(
+        0,
+        Math.ceil((endAt - Date.now()) / 1000),
+      );
+      setRemaining(nextRemaining);
+
+      if (nextRemaining <= 0) {
+        window.clearInterval(interval);
+        endAtRef.current = null;
+        if (phase === "break") {
+          finishBreakRef.current();
+        } else {
+          finishWorkRef.current();
+        }
+      }
+    }, 250);
+
+    return () => window.clearInterval(interval);
+  }, [phase]);
+
+  function autoSave(minutes: number) {
+    if (autoSavingRef.current) return;
+    autoSavingRef.current = true;
+
+    startTransition(async () => {
+      const result: SessionResult = await saveSession({
+        subjectId,
+        topic: topic.trim() || "Focused Study",
+        notes,
+        durationMinutes: minutes,
+        focusRating,
+        studiedAt: todayKey,
+      });
+      autoSavingRef.current = false;
+
+      if (!result.ok) {
+        setToast({
+          title: "System warning",
+          message: result.error ?? "Could not save this session.",
+          tone: "danger",
+        });
+        return;
+      }
+
+      router.refresh();
+      setNotes("");
+
+      if (
+        result.leveledUp ||
+        result.rankedUp ||
+        (result.achievements && result.achievements.length > 0)
+      ) {
+        setReward({
+          xp: result.xpEarned ?? sessionXp(minutes, focusRating),
+          level: result.level,
+          rank: result.rank ? RANKS[result.rank] : undefined,
+          leveledUp: result.leveledUp,
+          rankedUp: result.rankedUp,
+          achievements: result.achievements,
+        });
+      } else {
+        setToast({
+          title: "Session recorded",
+          message: `${minutes} minutes logged. +${formatNumber(result.xpEarned ?? sessionXp(minutes, focusRating))} XP`,
+          tone: "success",
+        });
+      }
+    });
   }
 
   function closeReview() {
@@ -213,6 +343,13 @@ export function FocusTimer({
   }
 
   const ringOffset = circumference * (1 - progress);
+  const cyclePosition =
+    cyclesBeforeLongBreak > 0
+      ? completedCycles === 0
+        ? 1
+        : ((completedCycles - 1) % cyclesBeforeLongBreak) + 1
+      : 0;
+  const ringColor = phase === "break" ? "#3dd6a3" : "#54ddff";
 
   return (
     <>
@@ -225,22 +362,30 @@ export function FocusTimer({
           <span
             className={cn(
               "flex items-center gap-1.5 text-[0.6rem] font-semibold tracking-[0.18em] uppercase",
-              phase === "running" ? "text-mint" : "text-muted",
+              phase === "running"
+                ? "text-mint"
+                : phase === "break"
+                  ? "text-mint"
+                  : "text-muted",
             )}
           >
             <span
               className={cn(
                 "h-1.5 w-1.5 rounded-full",
-                phase === "running"
+                phase === "running" || phase === "break"
                   ? "bg-mint shadow-[0_0_7px_#3dd6a3]"
                   : "bg-muted",
               )}
             />
             {phase === "running"
               ? "Gate open"
-              : phase === "paused"
-                ? "Paused"
-                : "Standby"}
+              : phase === "break"
+                ? breakLong
+                  ? "Long break"
+                  : "Break"
+                : phase === "paused"
+                  ? "Paused"
+                  : "Standby"}
           </span>
         </div>
 
@@ -274,14 +419,17 @@ export function FocusTimer({
                   cy="160"
                   r="138"
                   fill="none"
-                  stroke="#54ddff"
+                  stroke={ringColor}
                   strokeWidth="4"
                   strokeLinecap="round"
                   strokeDasharray={circumference}
                   strokeDashoffset={ringOffset}
                   transform="rotate(-90 160 160)"
                   style={{
-                    filter: "drop-shadow(0 0 6px rgba(84,221,255,0.7))",
+                    filter:
+                      phase === "break"
+                        ? "drop-shadow(0 0 6px rgba(61,214,163,0.7))"
+                        : "drop-shadow(0 0 6px rgba(84,221,255,0.7))",
                     transition: "stroke-dashoffset 0.3s linear",
                   }}
                 />
@@ -293,14 +441,27 @@ export function FocusTimer({
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <p className="hud-label">
-                  {phase === "review" ? "Session complete" : "Time remaining"}
+                  {phase === "review"
+                    ? "Session complete"
+                    : phase === "break"
+                      ? breakLong
+                        ? "Long break"
+                        : "Short break"
+                      : "Time remaining"}
                 </p>
                 <p className="mt-2 font-mono text-4xl font-medium tracking-[0.08em] text-ice sm:text-5xl">
                   {elapsedClock(remaining)}
                 </p>
                 <p className="mt-2 max-w-44 truncate text-center text-[0.64rem] tracking-[0.12em] text-muted uppercase">
-                  {selectedSubject?.name ?? "No subject"} · {duration} min
+                  {phase === "break"
+                    ? `Recovery · ${Math.round(breakTotal / 60)} min`
+                    : `${selectedSubject?.name ?? "No subject"} · ${duration} min`}
                 </p>
+                {pomodoro && phase !== "review" ? (
+                  <p className="mt-1.5 text-[0.55rem] tracking-[0.14em] text-glow/70 uppercase">
+                    Cycle {cyclePosition} / {cyclesBeforeLongBreak}
+                  </p>
+                ) : null}
               </div>
             </div>
 
@@ -339,6 +500,14 @@ export function FocusTimer({
                     <RotateCcw className="h-4 w-4" /> Reset
                   </button>
                 </>
+              ) : phase === "break" ? (
+                <button
+                  type="button"
+                  onClick={finishBreak}
+                  className="system-button"
+                >
+                  <Coffee className="h-4 w-4" /> Skip break
+                </button>
               ) : (
                 <button
                   type="button"
@@ -409,15 +578,110 @@ export function FocusTimer({
                   </button>
                 ))}
               </div>
-              <div className="mt-2 flex items-center gap-2 border border-[rgba(84,221,255,0.12)] bg-[rgba(3,10,20,0.4)] px-3 py-2">
-                <Timer className="h-3.5 w-3.5 text-muted" />
-                <span className="text-[0.64rem] text-muted">
-                  Estimated reward
-                </span>
-                <span className="ml-auto font-mono text-xs text-gold">
-                  +{formatNumber(sessionXp(duration, focusRating))} XP
-                </span>
+            </div>
+
+            <div>
+              <p className="hud-label mb-1.5">Focus quality</p>
+              <div className="grid grid-cols-5 gap-1.5">
+                {[1, 2, 3, 4, 5].map((rating) => (
+                  <button
+                    key={rating}
+                    type="button"
+                    onClick={() => setFocusRating(rating)}
+                    disabled={isLocked}
+                    className={cn(
+                      "border py-1.5 font-mono text-xs transition-colors",
+                      focusRating === rating
+                        ? "border-[rgba(84,221,255,0.7)] bg-[rgba(59,158,255,0.18)] text-glow"
+                        : "border-[rgba(84,221,255,0.12)] bg-[rgba(3,10,20,0.4)] text-mist hover:border-[rgba(84,221,255,0.35)]",
+                    )}
+                    aria-label={`Focus quality ${rating}: ${focusLabel(rating)}`}
+                  >
+                    {rating}
+                  </button>
+                ))}
               </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setPomodoro((value) => !value)}
+              disabled={isLocked}
+              className={cn(
+                "flex w-full items-center justify-between border px-3 py-2.5 text-left transition-colors",
+                pomodoro
+                  ? "border-[rgba(61,214,163,0.4)] bg-[rgba(61,214,163,0.08)]"
+                  : "border-[rgba(84,221,255,0.12)] bg-[rgba(3,10,20,0.4)]",
+              )}
+              aria-pressed={pomodoro}
+            >
+              <span className="flex items-center gap-2.5">
+                <Zap
+                  className={cn(
+                    "h-4 w-4",
+                    pomodoro ? "text-mint" : "text-muted",
+                  )}
+                />
+                <span>
+                  <span className="block text-xs font-semibold text-ice">
+                    Pomodoro cycles
+                  </span>
+                  <span className="mt-0.5 block text-[0.62rem] text-muted">
+                    Auto-log work, then take a break
+                  </span>
+                </span>
+              </span>
+              <span
+                className={cn(
+                  "relative h-5 w-9 border transition-colors",
+                  pomodoro
+                    ? "border-[rgba(61,214,163,0.5)] bg-[rgba(61,214,163,0.28)]"
+                    : "border-[rgba(84,221,255,0.18)] bg-[rgba(2,8,16,0.8)]",
+                )}
+              >
+                <span
+                  className={cn(
+                    "absolute top-0.5 h-3.5 w-3.5 transition-all",
+                    pomodoro
+                      ? "left-[18px] bg-mint shadow-[0_0_6px_#3dd6a3]"
+                      : "left-0.5 bg-muted",
+                  )}
+                />
+              </span>
+            </button>
+
+            {pomodoro ? (
+              <div className="grid grid-cols-3 gap-2">
+                <BreakField
+                  id="short-break"
+                  label="Short"
+                  value={shortBreak}
+                  onChange={setShortBreak}
+                  disabled={isLocked}
+                />
+                <BreakField
+                  id="long-break"
+                  label="Long"
+                  value={longBreak}
+                  onChange={setLongBreak}
+                  disabled={isLocked}
+                />
+                <BreakField
+                  id="cycle-count"
+                  label="Cycles"
+                  value={cyclesBeforeLongBreak}
+                  onChange={setCyclesBeforeLongBreak}
+                  disabled={isLocked}
+                />
+              </div>
+            ) : null}
+
+            <div className="flex items-center gap-2 border border-[rgba(84,221,255,0.12)] bg-[rgba(3,10,20,0.4)] px-3 py-2">
+              <Timer className="h-3.5 w-3.5 text-muted" />
+              <span className="text-[0.64rem] text-muted">Estimated reward</span>
+              <span className="ml-auto font-mono text-xs text-gold">
+                +{formatNumber(sessionXp(duration, focusRating))} XP
+              </span>
             </div>
 
             {subjects.length === 0 ? (
@@ -431,8 +695,9 @@ export function FocusTimer({
             ) : null}
 
             <p className="text-[0.64rem] leading-relaxed text-muted">
-              The System records only completed focus. Stay in the gate until
-              the timer ends, or finish early after 30 seconds.
+              {pomodoro
+                ? "Work sessions auto-record when the timer ends, then a break begins. Breaks do not count as study time."
+                : "The System records only completed focus. Stay in the gate until the timer ends, or finish early after 30 seconds."}
             </p>
           </div>
         </div>
@@ -545,6 +810,40 @@ export function FocusTimer({
       <RewardOverlay reward={reward} onClose={() => setReward(null)} />
       <SystemToast toast={toast} onClose={() => setToast(null)} />
     </>
+  );
+}
+
+function BreakField({
+  id,
+  label,
+  value,
+  onChange,
+  disabled,
+}: {
+  id: string;
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+  disabled: boolean;
+}) {
+  return (
+    <div>
+      <label htmlFor={id} className="hud-label mb-1 block text-[0.55rem]">
+        {label}
+      </label>
+      <input
+        id={id}
+        type="number"
+        min={1}
+        max={60}
+        className="system-input font-mono text-sm"
+        value={value}
+        onChange={(event) =>
+          onChange(Math.min(60, Math.max(1, Number(event.target.value) || 1)))
+        }
+        disabled={disabled}
+      />
+    </div>
   );
 }
 

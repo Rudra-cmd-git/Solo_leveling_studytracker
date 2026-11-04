@@ -67,6 +67,9 @@ export interface QuestView {
   period: QuestPeriod;
   target: number;
   xpReward: number;
+  subjectId: number | null;
+  subjectName: string | null;
+  subjectColor: string | null;
   progress: number;
   periodKey: string;
   claimed: boolean;
@@ -129,7 +132,17 @@ export interface SettingsData {
   defaultTimerMinutes: number;
   timezone: string;
   soundEnabled: boolean;
+  xpBonusesEnabled: boolean;
   onboarded: boolean;
+}
+
+export interface StreakInfo {
+  current: number;
+  best: number;
+  freezesUsedThisWeek: number;
+  freezeAvailable: boolean;
+  atRisk: boolean;
+  frozenDates: string[];
 }
 
 export interface AppData {
@@ -143,7 +156,7 @@ export interface AppData {
   weeklyQuests: QuestView[];
   achievements: AchievementView[];
   stats: StatView[];
-  streak: { current: number; best: number };
+  streak: StreakInfo;
   totals: {
     minutes: number;
     sessions: number;
@@ -211,6 +224,7 @@ export interface SettingsInput {
   defaultTimerMinutes: number;
   timezone: string;
   soundEnabled: boolean;
+  xpBonusesEnabled?: boolean;
 }
 
 export interface OnboardingInput {

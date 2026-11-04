@@ -61,6 +61,17 @@ export async function POST(request: Request) {
     return jsonError("Invalid backup: a claim references a missing quest.", 400);
   }
 
+  if (
+    data.quests.some(
+      (quest) => quest.subjectId != null && !subjectIds.has(quest.subjectId),
+    )
+  ) {
+    return jsonError(
+      "Invalid backup: a quest references a missing subject.",
+      400,
+    );
+  }
+
   const achievementIds = new Set(
     data.achievements.map((achievement) => achievement.id),
   );
@@ -95,6 +106,7 @@ export async function POST(request: Request) {
   );
 
   const statements: InStatement[] = [
+    statement("DELETE FROM streak_freezes"),
     statement("DELETE FROM player_achievements"),
     statement("DELETE FROM quest_claims"),
     statement("DELETE FROM sessions"),
@@ -114,14 +126,15 @@ export async function POST(request: Request) {
     ),
     statement(
       `INSERT INTO settings
-       (id, daily_goal_minutes, default_timer_minutes, timezone, sound_enabled, onboarded)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+       (id, daily_goal_minutes, default_timer_minutes, timezone, sound_enabled, xp_bonuses_enabled, onboarded)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         data.settings.id,
         data.settings.dailyGoalMinutes,
         data.settings.defaultTimerMinutes,
         data.settings.timezone,
         data.settings.soundEnabled ? 1 : 0,
+        data.settings.xpBonusesEnabled ? 1 : 0,
         data.settings.onboarded ? 1 : 0,
       ],
     ),
@@ -152,8 +165,8 @@ export async function POST(request: Request) {
     ...data.quests.map((quest) =>
       statement(
         `INSERT INTO quests
-         (id, code, title, description, metric, period, target, xp_reward, active, sort_order)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         (id, code, title, description, metric, period, target, xp_reward, subject_id, active, sort_order)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           quest.id,
           quest.code,
@@ -163,6 +176,7 @@ export async function POST(request: Request) {
           quest.period,
           quest.target,
           quest.xpReward,
+          quest.subjectId ?? null,
           quest.active ? 1 : 0,
           quest.sortOrder,
         ],
@@ -196,6 +210,12 @@ export async function POST(request: Request) {
       statement(
         "INSERT INTO player_achievements (id, achievement_id, unlocked_at) VALUES (?, ?, ?)",
         [entry.id, entry.achievementId, entry.unlockedAt],
+      ),
+    ),
+    ...data.streakFreezes.map((freeze) =>
+      statement(
+        "INSERT INTO streak_freezes (id, date_key, created_at) VALUES (?, ?, ?)",
+        [freeze.id, freeze.dateKey, freeze.createdAt],
       ),
     ),
     statement("UPDATE players SET total_xp = ? WHERE id = ?", [

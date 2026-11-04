@@ -1,4 +1,4 @@
-import { addDays } from "./dates";
+import { addDays, parseDateKey } from "./dates";
 import type {
   ProgressInfo,
   Rank,
@@ -93,6 +93,56 @@ export function sessionXp(durationMinutes: number, focusRating: number): number 
   return Math.round(minutes * 2 * multiplier) + 10;
 }
 
+export interface SessionRewardContext {
+  currentStreak: number;
+  isFirstOfDay: boolean;
+  isWeekend: boolean;
+}
+
+export interface SessionReward {
+  base: number;
+  streakBonus: number;
+  firstOfDayBonus: number;
+  weekendBonus: number;
+  total: number;
+}
+
+export function isWeekendDate(dateKey: string): boolean {
+  const day = parseDateKey(dateKey).getUTCDay();
+  return day === 0 || day === 6;
+}
+
+export function sessionReward(
+  durationMinutes: number,
+  focusRating: number,
+  context: SessionRewardContext,
+): SessionReward {
+  const base = sessionXp(durationMinutes, focusRating);
+  const streakDays = Math.min(10, Math.max(0, Math.round(context.currentStreak)));
+  const streakBonus = Math.round(base * streakDays * 0.02);
+  const firstOfDayBonus = context.isFirstOfDay ? 15 : 0;
+  const weekendBonus = context.isWeekend ? Math.round(base * 0.1) : 0;
+
+  return {
+    base,
+    streakBonus,
+    firstOfDayBonus,
+    weekendBonus,
+    total: base + streakBonus + firstOfDayBonus + weekendBonus,
+  };
+}
+
+export type BreakKind = "short" | "long";
+
+export function breakKindForCycle(
+  completedCycles: number,
+  cyclesBeforeLongBreak: number,
+): BreakKind {
+  const cycleLength = Math.max(1, Math.round(cyclesBeforeLongBreak));
+  const completed = Math.max(1, Math.round(completedCycles));
+  return completed % cycleLength === 0 ? "long" : "short";
+}
+
 export interface StreakResult {
   current: number;
   best: number;
@@ -101,8 +151,9 @@ export interface StreakResult {
 export function calculateStreaks(
   sessionDates: string[],
   today: string,
+  frozenDates: string[] = [],
 ): StreakResult {
-  const dates = [...new Set(sessionDates)].sort();
+  const dates = [...new Set([...sessionDates, ...frozenDates])].sort();
   if (dates.length === 0) return { current: 0, best: 0 };
 
   let best = 1;
@@ -132,6 +183,34 @@ export function calculateStreaks(
   }
 
   return { current, best: Math.max(best, current) };
+}
+
+export function streakAtRisk(
+  sessionDates: string[],
+  today: string,
+  frozenDates: string[] = [],
+): boolean {
+  const active = new Set([...sessionDates, ...frozenDates]);
+  if (active.size === 0) return false;
+  return !active.has(today) && !active.has(addDays(today, -1));
+}
+
+export function freezeCandidate(
+  sessionDates: string[],
+  today: string,
+  frozenDates: string[] = [],
+): string | null {
+  const active = new Set([...sessionDates, ...frozenDates]);
+  if (active.has(today) || active.has(addDays(today, -1))) return null;
+
+  const latest = [...active].sort().at(-1);
+  if (!latest) return null;
+
+  if (latest === addDays(today, -2)) {
+    return addDays(today, -1);
+  }
+
+  return null;
 }
 
 export interface StatContext {

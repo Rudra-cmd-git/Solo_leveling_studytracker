@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Save, Volume2, VolumeX } from "lucide-react";
+import { Save, Volume2, VolumeX, Zap } from "lucide-react";
 import { updateSettings } from "@/app/actions";
 import type { SettingsData } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -37,6 +37,9 @@ export function ProfileSettings({
   const [timer, setTimer] = useState(settings.defaultTimerMinutes);
   const [timezone, setTimezone] = useState(settings.timezone);
   const [soundEnabled, setSoundEnabled] = useState(settings.soundEnabled);
+  const [xpBonusesEnabled, setXpBonusesEnabled] = useState(
+    settings.xpBonusesEnabled,
+  );
   const [toast, setToast] = useState<ToastState | null>(null);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
@@ -52,6 +55,7 @@ export function ProfileSettings({
         defaultTimerMinutes: timer,
         timezone,
         soundEnabled,
+        xpBonusesEnabled,
       });
 
       if (!result.ok) {
@@ -199,6 +203,52 @@ export function ProfileSettings({
                   "absolute top-0.5 h-3.5 w-3.5 transition-all",
                   soundEnabled
                     ? "left-[18px] bg-glow shadow-[0_0_6px_#54ddff]"
+                    : "left-0.5 bg-muted",
+                )}
+              />
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setXpBonusesEnabled((value) => !value)}
+            className={cn(
+              "flex w-full items-center justify-between border px-3 py-2.5 text-left transition-colors",
+              xpBonusesEnabled
+                ? "border-[rgba(255,191,90,0.4)] bg-[rgba(255,191,90,0.08)]"
+                : "border-[rgba(84,221,255,0.12)] bg-[rgba(3,10,20,0.4)]",
+            )}
+            aria-pressed={xpBonusesEnabled}
+          >
+            <span className="flex items-center gap-2.5">
+              <Zap
+                className={cn(
+                  "h-4 w-4",
+                  xpBonusesEnabled ? "text-gold" : "text-muted",
+                )}
+              />
+              <span>
+                <span className="block text-xs font-semibold text-ice">
+                  XP bonuses
+                </span>
+                <span className="mt-0.5 block text-[0.62rem] text-muted">
+                  Streak, first-session-of-day, and weekend bonuses
+                </span>
+              </span>
+            </span>
+            <span
+              className={cn(
+                "relative h-5 w-9 border transition-colors",
+                xpBonusesEnabled
+                  ? "border-[rgba(255,191,90,0.5)] bg-[rgba(255,191,90,0.28)]"
+                  : "border-[rgba(84,221,255,0.18)] bg-[rgba(2,8,16,0.8)]",
+              )}
+            >
+              <span
+                className={cn(
+                  "absolute top-0.5 h-3.5 w-3.5 transition-all",
+                  xpBonusesEnabled
+                    ? "left-[18px] bg-gold shadow-[0_0_6px_#ffb84d]"
                     : "left-0.5 bg-muted",
                 )}
               />

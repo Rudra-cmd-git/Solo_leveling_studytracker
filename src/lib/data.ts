@@ -9,6 +9,7 @@ import {
   quests,
   sessions,
   settings,
+  streakFreezes,
   subjects,
 } from "./db/schema";
 import {
@@ -25,7 +26,9 @@ import {
   achievementValue,
   calculateStats,
   calculateStreaks,
+  freezeCandidate,
   progressFromXp,
+  streakAtRisk,
   type AchievementContext,
 } from "./game";
 import type {
@@ -67,6 +70,7 @@ async function getSettingsRow(): Promise<SettingsData> {
     defaultTimerMinutes: row.defaultTimerMinutes,
     timezone: row.timezone,
     soundEnabled: row.soundEnabled,
+    xpBonusesEnabled: row.xpBonusesEnabled,
     onboarded: row.onboarded,
   };
 }
@@ -132,6 +136,7 @@ function questProgressValue(
 
 async function buildQuestViews(
   sessionRows: SessionData[],
+  subjectRows: SubjectData[],
   timezone: string,
 ): Promise<{
   dailyQuests: QuestView[];
@@ -142,6 +147,7 @@ async function buildQuestViews(
   const today = todayKey(timezone);
   const week = weekKeyFor(today);
   const weekEnd = addDays(week, 6);
+  const subjectMap = new Map(subjectRows.map((subject) => [subject.id, subject]));
   const claimRows = await db.select().from(questClaims);
   const claimSet = new Set(
     claimRows.map((claim) => `${claim.questId}:${claim.periodKey}`),
@@ -155,13 +161,15 @@ async function buildQuestViews(
   const views = questRows.map((quest) => {
     const period = quest.period as QuestPeriod;
     const periodKey = period === "daily" ? today : week;
-    const relevant =
-      period === "daily"
-        ? sessionRows.filter((session) => session.studiedAt === today)
-        : sessionRows.filter(
-            (session) =>
-              session.studiedAt >= week && session.studiedAt <= weekEnd,
-          );
+    const subject = quest.subjectId
+      ? subjectMap.get(quest.subjectId)
+      : undefined;
+    const relevant = sessionRows.filter((session) => {
+      if (subject && session.subjectId !== subject.id) return false;
+      return period === "daily"
+        ? session.studiedAt === today
+        : session.studiedAt >= week && session.studiedAt <= weekEnd;
+    });
 
     const progress = questProgressValue(quest.metric as QuestMetric, relevant);
     const claimed = claimSet.has(`${quest.id}:${periodKey}`);
@@ -175,6 +183,9 @@ async function buildQuestViews(
       period,
       target: quest.target,
       xpReward: quest.xpReward,
+      subjectId: quest.subjectId ?? null,
+      subjectName: subject?.name ?? null,
+      subjectColor: subject?.color ?? null,
       progress,
       periodKey,
       claimed,
@@ -307,13 +318,25 @@ export const getAppData = cache(async (): Promise<AppData> => {
   const sessionRows = await getSessionRows(subjectRows);
   const { dailyQuests, weeklyQuests, today, week } = await buildQuestViews(
     sessionRows,
+    subjectRows,
     appSettings.timezone,
   );
 
-  const streak = calculateStreaks(
-    sessionRows.map((session) => session.studiedAt),
-    today,
-  );
+  const freezeRows = await db.select().from(streakFreezes);
+  const frozenDates = freezeRows.map((freeze) => freeze.dateKey);
+  const sessionDates = sessionRows.map((session) => session.studiedAt);
+  const streak = calculateStreaks(sessionDates, today, frozenDates);
+  const freezesUsedThisWeek = frozenDates.filter(
+    (dateKey) => weekKeyFor(dateKey) === week,
+  ).length;
+  const candidate = freezeCandidate(sessionDates, today, frozenDates);
+  const streakInfo = {
+    ...streak,
+    freezesUsedThisWeek,
+    freezeAvailable: freezesUsedThisWeek === 0 && candidate !== null,
+    atRisk: streakAtRisk(sessionDates, today, frozenDates),
+    frozenDates,
+  };
   const totalMinutes = sessionRows.reduce(
     (sum, session) => sum + session.durationMinutes,
     0,
@@ -390,7 +413,7 @@ export const getAppData = cache(async (): Promise<AppData> => {
     weeklyQuests,
     achievements: await buildAchievementViews(achievementContext, unlocked),
     stats,
-    streak,
+    streak: streakInfo,
     totals: {
       minutes: totalMinutes,
       sessions: totalSessions,

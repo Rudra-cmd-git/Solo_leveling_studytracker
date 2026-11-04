@@ -2,11 +2,18 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { History, Search, SlidersHorizontal, Trash2 } from "lucide-react";
+import {
+  History,
+  Pencil,
+  Search,
+  SlidersHorizontal,
+  Trash2,
+} from "lucide-react";
 import { deleteSession } from "@/app/actions";
 import { addDays } from "@/lib/dates";
 import type { SessionData, SubjectData } from "@/lib/types";
 import { cn, formatNumber } from "@/lib/utils";
+import { SessionEditDialog } from "./session-edit-dialog";
 import { SessionRow } from "./session-row";
 import { SystemToast, type ToastState } from "./system-toast";
 
@@ -26,6 +33,7 @@ export function SessionHistory({
   const [range, setRange] = useState<Range>("all");
   const [toast, setToast] = useState<ToastState | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [editing, setEditing] = useState<SessionData | null>(null);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -151,22 +159,35 @@ export function SessionHistory({
                 key={session.id}
                 session={session}
                 actions={
-                  <button
-                    type="button"
-                    onClick={() => remove(session)}
-                    disabled={deletingId === session.id}
-                    className={cn(
-                      "icon-button h-7 w-7 border-[rgba(84,221,255,0.1)]",
-                      "hover:border-[rgba(255,84,104,0.5)] hover:text-[#ffadb8]",
-                    )}
-                    aria-label={`Delete ${session.topic}`}
-                  >
-                    {deletingId === session.id ? (
-                      <span className="h-3 w-3 animate-spin rounded-full border border-muted border-t-transparent" />
-                    ) : (
-                      <Trash2 className="h-3.5 w-3.5" />
-                    )}
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setEditing(session)}
+                      className={cn(
+                        "icon-button h-7 w-7 border-[rgba(84,221,255,0.1)]",
+                        "hover:border-[rgba(84,221,255,0.45)] hover:text-glow",
+                      )}
+                      aria-label={`Edit ${session.topic}`}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => remove(session)}
+                      disabled={deletingId === session.id}
+                      className={cn(
+                        "icon-button h-7 w-7 border-[rgba(84,221,255,0.1)]",
+                        "hover:border-[rgba(255,84,104,0.5)] hover:text-[#ffadb8]",
+                      )}
+                      aria-label={`Delete ${session.topic}`}
+                    >
+                      {deletingId === session.id ? (
+                        <span className="h-3 w-3 animate-spin rounded-full border border-muted border-t-transparent" />
+                      ) : (
+                        <Trash2 className="h-3.5 w-3.5" />
+                      )}
+                    </button>
+                  </div>
                 }
               />
             ))
@@ -192,6 +213,22 @@ export function SessionHistory({
           </p>
         ) : null}
       </div>
+
+      {editing ? (
+        <SessionEditDialog
+          session={editing}
+          subjects={subjects}
+          todayKey={todayKey}
+          onClose={() => setEditing(null)}
+          onSaved={(message) =>
+            setToast({
+              title: "Record updated",
+              message,
+              tone: "success",
+            })
+          }
+        />
+      ) : null}
 
       <SystemToast toast={toast} onClose={() => setToast(null)} />
     </>

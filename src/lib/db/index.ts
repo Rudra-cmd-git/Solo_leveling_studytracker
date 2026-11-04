@@ -11,7 +11,19 @@ const DEFAULT_SUBJECTS = [
   { name: "Coding", color: "#ffb84d" },
 ];
 
-const DEFAULT_QUESTS = [
+interface DefaultQuest {
+  code: string;
+  title: string;
+  description: string;
+  metric: string;
+  period: string;
+  target: number;
+  xpReward: number;
+  sortOrder: number;
+  subjectName?: string;
+}
+
+const DEFAULT_QUESTS: DefaultQuest[] = [
   {
     code: "daily_minutes_60",
     title: "Preparation",
@@ -61,6 +73,28 @@ const DEFAULT_QUESTS = [
     target: 300,
     xpReward: 200,
     sortOrder: 2,
+  },
+  {
+    code: "daily_math_minutes_30",
+    title: "Mathematical Discipline",
+    description: "Study Mathematics for at least 30 minutes today.",
+    metric: "minutes",
+    period: "daily",
+    target: 30,
+    xpReward: 40,
+    sortOrder: 4,
+    subjectName: "Mathematics",
+  },
+  {
+    code: "weekly_science_sessions_3",
+    title: "Scientific Inquiry",
+    description: "Complete 3 Science sessions this week.",
+    metric: "sessions",
+    period: "weekly",
+    target: 3,
+    xpReward: 120,
+    sortOrder: 3,
+    subjectName: "Science",
   },
 ];
 
@@ -210,6 +244,7 @@ const SCHEMA_STATEMENTS = [
     default_timer_minutes INTEGER NOT NULL DEFAULT 25,
     timezone TEXT NOT NULL DEFAULT 'Asia/Kolkata',
     sound_enabled INTEGER NOT NULL DEFAULT 0,
+    xp_bonuses_enabled INTEGER NOT NULL DEFAULT 0,
     onboarded INTEGER NOT NULL DEFAULT 0
   )`,
   `CREATE TABLE IF NOT EXISTS subjects (
@@ -240,6 +275,7 @@ const SCHEMA_STATEMENTS = [
     period TEXT NOT NULL,
     target INTEGER NOT NULL,
     xp_reward INTEGER NOT NULL,
+    subject_id INTEGER REFERENCES subjects(id),
     active INTEGER NOT NULL DEFAULT 1,
     sort_order INTEGER NOT NULL DEFAULT 0
   )`,
@@ -271,7 +307,28 @@ const SCHEMA_STATEMENTS = [
   )`,
   `CREATE UNIQUE INDEX IF NOT EXISTS player_achievements_unique_idx
     ON player_achievements (achievement_id)`,
+  `CREATE TABLE IF NOT EXISTS streak_freezes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    date_key TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  )`,
+  "CREATE UNIQUE INDEX IF NOT EXISTS streak_freezes_date_idx ON streak_freezes (date_key)",
 ];
+
+const MIGRATION_STATEMENTS = [
+  "ALTER TABLE settings ADD COLUMN xp_bonuses_enabled INTEGER NOT NULL DEFAULT 0",
+  "ALTER TABLE quests ADD COLUMN subject_id INTEGER REFERENCES subjects(id)",
+];
+
+async function runMigrations(client: Client): Promise<void> {
+  for (const statement of MIGRATION_STATEMENTS) {
+    try {
+      await client.execute(statement);
+    } catch {
+      // Column already exists (fresh database or previous migration).
+    }
+  }
+}
 
 function resolveDatabaseUrl(): string {
   if (process.env.TURSO_DATABASE_URL) {
@@ -318,6 +375,8 @@ async function initializeSchema(client: Client): Promise<void> {
     await client.execute(statement);
   }
 
+  await runMigrations(client);
+
   const now = new Date().toISOString();
 
   const seedStatements = [
@@ -327,8 +386,8 @@ async function initializeSchema(client: Client): Promise<void> {
     },
     {
       sql: `INSERT OR IGNORE INTO settings
-        (id, daily_goal_minutes, default_timer_minutes, timezone, sound_enabled, onboarded)
-        VALUES (1, 60, 25, 'Asia/Kolkata', 0, 0)`,
+        (id, daily_goal_minutes, default_timer_minutes, timezone, sound_enabled, xp_bonuses_enabled, onboarded)
+        VALUES (1, 60, 25, 'Asia/Kolkata', 0, 0, 0)`,
       args: [],
     },
     ...DEFAULT_SUBJECTS.map((subject) => ({
@@ -337,8 +396,10 @@ async function initializeSchema(client: Client): Promise<void> {
     })),
     ...DEFAULT_QUESTS.map((quest) => ({
       sql: `INSERT OR IGNORE INTO quests
-        (code, title, description, metric, period, target, xp_reward, active, sort_order)
-        VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)`,
+        (code, title, description, metric, period, target, xp_reward, active, sort_order, subject_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ${
+          quest.subjectName ? "(SELECT id FROM subjects WHERE name = ?)" : "NULL"
+        })`,
       args: [
         quest.code,
         quest.title,
@@ -348,6 +409,7 @@ async function initializeSchema(client: Client): Promise<void> {
         quest.target,
         quest.xpReward,
         quest.sortOrder,
+        ...(quest.subjectName ? [quest.subjectName] : []),
       ],
     })),
     ...DEFAULT_ACHIEVEMENTS.map((achievement) => ({

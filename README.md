@@ -7,16 +7,17 @@ This is an original fan-made interface. It does not include or redistribute artw
 ## Features
 
 - **Focus timer** with presets, pause/resume, elapsed tracking, and a post-session review step
+- **Pomodoro cycles** with configurable short/long breaks and automatic work-session logging
 - **Manual session logging** for study completed away from the timer
 - **XP and levels** with an escalating level curve
 - **Hunter ranks E → S**, each with its own title and visual treatment
-- **Daily and weekly quests** with claimable XP rewards
-- **Study streaks** that keep the chain alive through today or yesterday
+- **Daily and weekly quests** with claimable XP rewards, including subject-targeted quests
+- **Study streaks** that keep the chain alive through today or yesterday, with a weekly freeze for one missed day
 - **Five attributes** — Intelligence, Focus, Discipline, Vitality, Perception
 - **Achievements** with progress tracking and XP rewards
-- **Analytics** — 14-day XP trend, subject split, and a 12-week study heatmap
-- **Session archive** with search, subject filter, date range, and deletion
-- **Settings** for hunter name, daily goal, default timer, timezone, and chime
+- **Analytics** — 14-day XP trend, subject split, monthly study calendar, and a 12-week heatmap
+- **Session archive** with search, subject filter, date range, inline editing, and deletion
+- **Settings** for hunter name, daily goal, default timer, timezone, chime, and optional XP bonuses
 - **JSON backup and restore** plus a progress reset
 - **Responsive layout** with desktop sidebar and mobile bottom navigation
 - **Single-user** with no account system — just open it and start training
@@ -135,9 +136,15 @@ Level 1 → 2 costs 100 XP, level 2 → 3 costs 150 XP, and so on.
 
 A streak counts consecutive days with at least one session. The chain remains active if your latest session was today or yesterday; it breaks when the most recent session is older than that. Breaking a streak does not remove XP.
 
+Each week grants one streak freeze. If exactly one day was missed, the freeze bridges that day and keeps the chain intact. Frozen days count as active for streak calculations but not as study time.
+
 ### Quests
 
-Daily quests reset at midnight in your configured timezone. Weekly quests reset on Monday. Complete the objective, then claim the reward. Claimed rewards are recorded per period and cannot be claimed twice.
+Daily quests reset at midnight in your configured timezone. Weekly quests reset on Monday. Complete the objective, then claim the reward. Claimed rewards are recorded per period and cannot be claimed twice. Subject quests only count sessions for their assigned subject.
+
+### XP bonuses
+
+XP bonuses are optional and off by default. When enabled in Settings, sessions earn a streak bonus (up to 10 days), a first-session-of-day bonus, and a weekend bonus on top of the base session XP. Break time never earns XP.
 
 ## Project structure
 
@@ -164,7 +171,7 @@ tests/                  Vitest unit tests
 
 ## Tests
 
-The test suite covers the progression formulas, rank thresholds, streak edge cases, attribute calculations, achievement conditions, formatting, and date/timezone helpers.
+The test suite covers the progression formulas, rank thresholds, streak and freeze edge cases, XP bonuses, Pomodoro break selection, attribute calculations, achievement conditions, formatting, and date/timezone helpers.
 
 ```bash
 npm test

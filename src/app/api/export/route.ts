@@ -7,6 +7,7 @@ import {
   quests,
   sessions,
   settings,
+  streakFreezes,
   subjects,
 } from "@/lib/db/schema";
 import { todayKey } from "@/lib/dates";
@@ -30,6 +31,7 @@ export async function GET() {
     questClaims: await db.select().from(questClaims),
     achievements: await db.select().from(achievements),
     playerAchievements: await db.select().from(playerAchievements),
+    streakFreezes: await db.select().from(streakFreezes),
   };
 
   return new Response(JSON.stringify(backup, null, 2), {

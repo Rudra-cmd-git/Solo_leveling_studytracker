@@ -5,6 +5,8 @@ import { Heatmap } from "@/components/heatmap";
 import { PageHeader } from "@/components/page-header";
 import { RankBadge } from "@/components/rank-badge";
 import { RankLadder } from "@/components/rank-ladder";
+import { StreakFreeze } from "@/components/streak-freeze";
+import { StudyCalendar } from "@/components/study-calendar";
 import { SubjectBreakdown } from "@/components/subject-breakdown";
 import { SystemPanel } from "@/components/system-panel";
 import { XpBar } from "@/components/xp-bar";
@@ -105,6 +107,11 @@ export default async function ProgressPage() {
       <div className="grid gap-5 lg:grid-cols-2">
         <XpTrend days={data.charts.lastFourteenDays} />
         <SubjectBreakdown subjects={data.charts.subjects} />
+      </div>
+
+      <div className="grid items-start gap-5 lg:grid-cols-[1.3fr_0.7fr]">
+        <StudyCalendar sessions={data.sessions} todayKey={data.todayKey} />
+        <StreakFreeze streak={data.streak} />
       </div>
 
       <Heatmap days={data.charts.heatmap} />

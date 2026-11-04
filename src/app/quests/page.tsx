@@ -1,6 +1,7 @@
 import { Clock3, Flame, ShieldCheck, Sparkles, Swords } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { QuestCard } from "@/components/quest-card";
+import { StreakFreeze } from "@/components/streak-freeze";
 import { SystemPanel } from "@/components/system-panel";
 import { getAppData } from "@/lib/data";
 import { weekRangeLabel } from "@/lib/dates";
@@ -76,6 +77,9 @@ export default async function QuestsPage() {
           </div>
         </section>
 
+        <div className="space-y-5">
+        <StreakFreeze streak={data.streak} />
+
         <SystemPanel label="Quest protocol" className="boot-in boot-in-delay-3">
           <div className="space-y-4">
             <p className="text-xs leading-relaxed text-mist">
@@ -107,6 +111,7 @@ export default async function QuestsPage() {
             </div>
           </div>
         </SystemPanel>
+        </div>
       </div>
 
       <SystemPanel className="boot-in" label="System notice">

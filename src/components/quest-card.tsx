@@ -69,8 +69,20 @@ export function QuestCard({ quest }: { quest: QuestView }) {
 
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <p className="hud-label">{quest.period} quest</p>
+              {quest.subjectName ? (
+                <span
+                  className="border px-1.5 py-0.5 text-[0.52rem] font-semibold tracking-[0.08em] uppercase"
+                  style={{
+                    color: quest.subjectColor ?? "#54ddff",
+                    borderColor: `${quest.subjectColor ?? "#54ddff"}55`,
+                    backgroundColor: `${quest.subjectColor ?? "#54ddff"}12`,
+                  }}
+                >
+                  {quest.subjectName}
+                </span>
+              ) : null}
               {quest.claimed ? (
                 <span className="quest-stamp px-1.5 py-0.5">Cleared</span>
               ) : null}
