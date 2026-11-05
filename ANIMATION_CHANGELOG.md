@@ -86,11 +86,11 @@ CSS `prefers-reduced-motion` block still covers the CSS keyframes.
 
 ## TODO / future work
 
-- [ ] Add count-ups to the remaining static metrics on the progress page (`Metric`) and settings page (`CoreInfo`).
-- [ ] Animate the streak-freeze panel (flame flicker, shield charge) and the streak ribbon.
+- [x] Add count-ups to the remaining static metrics on the progress page (`Metric`) and settings page (`CoreInfo`).
+- [x] Animate the streak-freeze panel (flame flicker, shield charge) and the streak ribbon.
+- [x] Add a dedicated skeleton shimmer to replace the generic `animate-pulse` blocks.
+- [x] Subtle rotation/parallax orbits in the status window.
 - [ ] Add exit transitions for route changes (Next.js View Transitions API or an `AnimatePresence` router wrapper); currently entrances only.
-- [ ] Optional subtle parallax on the decorative orbits in the status window.
 - [ ] Evaluate `LazyMotion` + `domAnimation` to trim the motion bundle once the animation set is final.
-- [ ] Add a dedicated skeleton shimmer to replace the generic `animate-pulse` blocks.
 - [ ] Consider a "critical time" heartbeat sound cue synced with the timer pulse (opt-in).
 - [ ] Add visual regression screenshots for the reward overlay states (level-up, rank-up, achievement).

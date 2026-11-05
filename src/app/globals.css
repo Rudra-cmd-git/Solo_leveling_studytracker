@@ -1111,9 +1111,107 @@ a {
   }
 }
 
+/* Solo Leveling - Hunter Shield & Flame animations */
+@keyframes flame-flicker {
+  0%, 100% {
+    transform: scale(1) rotate(-1deg);
+    filter: drop-shadow(0 0 4px rgba(255, 191, 90, 0.45));
+  }
+  50% {
+    transform: scale(1.14) rotate(2deg);
+    filter: drop-shadow(0 0 10px rgba(255, 191, 90, 0.85));
+  }
+}
+
+.animate-flame-flicker {
+  animation: flame-flicker 1.8s ease-in-out infinite;
+  display: inline-block;
+  transform-origin: center bottom;
+}
+
+@keyframes shield-charge {
+  0%, 100% {
+    box-shadow: 0 0 6px rgba(84, 221, 255, 0.25), inset 0 0 6px rgba(84, 221, 255, 0.15);
+    border-color: rgba(84, 221, 255, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 18px rgba(84, 221, 255, 0.6), inset 0 0 12px rgba(84, 221, 255, 0.35);
+    border-color: rgba(84, 221, 255, 0.8);
+  }
+}
+
+.animate-shield-charge {
+  animation: shield-charge 2.4s ease-in-out infinite;
+}
+
+/* Sci-fi System Skeleton Scanner */
+@keyframes system-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.system-shimmer {
+  position: relative;
+  overflow: hidden;
+  background: rgba(84, 221, 255, 0.05);
+  border: 1px solid rgba(84, 221, 255, 0.08);
+}
+
+.system-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(84, 221, 255, 0.12) 50%,
+    transparent 100%
+  );
+  animation: system-shimmer 1.8s infinite ease-in-out;
+}
+
+@keyframes orbit-spin {
+  from {
+    transform: translateY(-50%) rotate(0deg);
+  }
+  to {
+    transform: translateY(-50%) rotate(360deg);
+  }
+}
+
+@keyframes orbit-spin-reverse {
+  from {
+    transform: translateY(-50%) rotate(360deg);
+  }
+  to {
+    transform: translateY(-50%) rotate(0deg);
+  }
+}
+
+.status-orbit-outer {
+  animation: orbit-spin 48s linear infinite;
+  transform-origin: center center;
+}
+
+.status-orbit-inner {
+  animation: orbit-spin-reverse 32s linear infinite;
+  transform-origin: center center;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .reward-flash,
   .reward-shockwave {
     display: none;
+  }
+  .animate-flame-flicker,
+  .animate-shield-charge,
+  .system-shimmer::after,
+  .status-orbit-outer,
+  .status-orbit-inner {
+    animation: none;
   }
 }

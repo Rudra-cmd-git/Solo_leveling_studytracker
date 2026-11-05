@@ -12,6 +12,7 @@ import { SystemPanel } from "@/components/system-panel";
 import { XpBar } from "@/components/xp-bar";
 import { XpTrend } from "@/components/xp-trend";
 import { getAppData } from "@/lib/data";
+import { CountUp } from "@/components/motion/count-up";
 import { formatMinutes } from "@/lib/game";
 import { formatNumber } from "@/lib/utils";
 
@@ -86,21 +87,29 @@ export default async function ProgressPage() {
           icon={Zap}
           label="Total study"
           value={formatMinutes(data.totals.minutes)}
+          numericValue={data.totals.minutes}
+          format="minutes"
         />
         <Metric
           icon={Flame}
           label="Best streak"
           value={`${data.streak.best} days`}
+          numericValue={data.streak.best}
+          suffix=" days"
         />
         <Metric
           icon={Award}
           label="Achievements"
           value={`${earned} / ${data.achievements.length}`}
+          numericValue={earned}
+          suffix={` / ${data.achievements.length}`}
         />
         <Metric
           icon={TrendingUp}
           label="Active days"
           value={`${activeDays} / 84`}
+          numericValue={activeDays}
+          suffix=" / 84"
         />
       </div>
 
@@ -152,20 +161,32 @@ function Metric({
   icon: Icon,
   label,
   value,
+  numericValue,
+  format = "number",
+  suffix = "",
 }: {
   icon: typeof Zap;
   label: string;
   value: string;
+  numericValue?: number;
+  format?: "number" | "minutes" | "hours" | "decimal";
+  suffix?: string;
 }) {
   return (
-    <div className="system-panel system-panel--quiet px-3 py-3">
+    <div className="system-panel system-panel--quiet px-3 py-3 transition-transform duration-200 hover:-translate-y-0.5">
       <span className="panel-corner panel-corner--tl" />
       <span className="panel-corner panel-corner--br" />
       <div className="flex items-center gap-1.5">
         <Icon className="h-3.5 w-3.5 text-glow/70" strokeWidth={1.6} />
         <p className="hud-label">{label}</p>
       </div>
-      <p className="mt-1.5 truncate font-display text-lg text-ice">{value}</p>
+      <p className="mt-1.5 truncate font-display text-lg text-ice">
+        {numericValue !== undefined ? (
+          <CountUp value={numericValue} format={format} suffix={suffix} />
+        ) : (
+          value
+        )}
+      </p>
     </div>
   );
 }

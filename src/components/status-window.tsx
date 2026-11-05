@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, Flame, Timer, Trophy, Zap } from "lucide-react";
 import type { AppData } from "@/lib/types";
-import { formatNumber } from "@/lib/utils";
+import { cn, formatNumber } from "@/lib/utils";
 import { CountUp } from "./motion/count-up";
 import { RankBadge } from "./rank-badge";
 import { StatsGrid } from "./stats-grid";
@@ -13,8 +13,8 @@ export function StatusWindow({ data }: { data: AppData }) {
 
   return (
     <SystemPanel hero className="boot-in overflow-hidden">
-      <div className="pointer-events-none absolute top-1/2 -right-24 h-72 w-72 -translate-y-1/2 rounded-full border border-[rgba(84,221,255,0.06)]" />
-      <div className="pointer-events-none absolute top-1/2 -right-10 h-40 w-40 -translate-y-1/2 rounded-full border border-[rgba(84,221,255,0.08)]" />
+      <div className="status-orbit-outer pointer-events-none absolute top-1/2 -right-24 h-72 w-72 rounded-full border border-dashed border-[rgba(84,221,255,0.08)]" />
+      <div className="status-orbit-inner pointer-events-none absolute top-1/2 -right-10 h-40 w-40 rounded-full border border-[rgba(84,221,255,0.11)]" />
 
       <div className="relative flex flex-col gap-7 xl:flex-row xl:items-center xl:justify-between">
         <div className="min-w-0 flex-1">
@@ -141,9 +141,9 @@ function MetricCard({
   accent: string;
 }) {
   return (
-    <div className="border border-[rgba(84,221,255,0.11)] bg-[rgba(3,10,20,0.48)] px-3 py-3 transition-colors hover:border-[rgba(84,221,255,0.24)]">
+    <div className="border border-[rgba(84,221,255,0.11)] bg-[rgba(3,10,20,0.48)] px-3 py-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-[rgba(84,221,255,0.24)]">
       <div className="flex items-center gap-1.5">
-        <Icon className={`h-3.5 w-3.5 ${accent}`} strokeWidth={1.7} />
+        <Icon className={cn("h-3.5 w-3.5", accent, label === "Streak" && value > 0 && "animate-flame-flicker")} strokeWidth={1.7} />
         <span className="hud-label">{label}</span>
       </div>
       <CountUp

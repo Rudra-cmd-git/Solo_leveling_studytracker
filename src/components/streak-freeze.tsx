@@ -56,9 +56,9 @@ export function StreakFreeze({ streak }: { streak: StreakInfo }) {
           </div>
           <div
             className={cn(
-              "flex h-11 w-11 shrink-0 items-center justify-center border",
+              "flex h-11 w-11 shrink-0 items-center justify-center border transition-all duration-300",
               available
-                ? "border-[rgba(84,221,255,0.4)] bg-[rgba(59,158,255,0.1)] text-glow"
+                ? "border-[rgba(84,221,255,0.4)] bg-[rgba(59,158,255,0.1)] text-glow animate-shield-charge"
                 : usedThisWeek
                   ? "border-[rgba(255,191,90,0.35)] bg-[rgba(255,191,90,0.08)] text-gold"
                   : "border-[rgba(84,221,255,0.12)] bg-[rgba(3,10,20,0.4)] text-muted",
@@ -75,7 +75,7 @@ export function StreakFreeze({ streak }: { streak: StreakInfo }) {
         </div>
 
         <div className="mt-4 flex items-center gap-2 border border-[rgba(84,221,255,0.12)] bg-[rgba(3,10,20,0.4)] px-3 py-2.5">
-          <Flame className="h-3.5 w-3.5 text-gold" />
+          <Flame className={cn("h-3.5 w-3.5 text-gold", streak.current > 0 && "animate-flame-flicker")} />
           <p className="text-[0.66rem] leading-relaxed text-muted">
             {streak.atRisk
               ? available
