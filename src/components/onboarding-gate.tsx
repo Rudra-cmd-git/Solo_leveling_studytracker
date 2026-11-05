@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { motion } from "motion/react";
 import { AlertTriangle, Sparkles } from "lucide-react";
 import { completeOnboarding } from "@/app/actions";
 import { SystemSigil } from "./system-sigil";
@@ -55,9 +56,25 @@ export function OnboardingGate({
   }
 
   return (
-    <div className="overlay-backdrop z-[95]">
-      <div className="level-overlay max-w-xl text-left">
-        <div className="level-rays" />
+    <motion.div
+      className="overlay-backdrop z-[95]"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.4 }}
+    >
+      <motion.div
+        className="level-overlay max-w-xl text-left"
+        initial={{ opacity: 0, scale: 0.82, filter: "blur(18px) brightness(2.4)" }}
+        animate={{ opacity: 1, scale: 1, filter: "blur(0px) brightness(1)" }}
+        transition={{ type: "spring", stiffness: 150, damping: 20 }}
+        style={{ animation: "none" }}
+      >
+        <motion.div
+          className="level-rays"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
+          style={{ animation: "none" }}
+        />
         <div className="flex items-center gap-4">
           <SystemSigil className="h-16 w-16 shrink-0" />
           <div>
@@ -166,7 +183,7 @@ export function OnboardingGate({
             Your legend begins with a single session
           </p>
         </form>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

@@ -1,5 +1,6 @@
 import type { StatView } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { AnimatedBar } from "./motion/animated-bar";
 
 export function StatsGrid({
   stats,
@@ -34,9 +35,9 @@ export function StatsGrid({
             </span>
           </div>
           <div className="mt-2 stat-track">
-            <div
+            <AnimatedBar
               className="stat-fill"
-              style={{ width: `${Math.max(stat.percent, stat.xp > 0 ? 3 : 0)}%` }}
+              percent={Math.max(stat.percent, stat.xp > 0 ? 3 : 0)}
             />
           </div>
           {!compact ? (

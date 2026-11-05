@@ -29,8 +29,9 @@ export function RankLadder({ progress }: { progress: ProgressInfo }) {
           return (
             <div key={rankKey} className="flex min-w-0 flex-1 items-center gap-1">
               <div
+                style={{ animationDelay: `${index * 70}ms` }}
                 className={cn(
-                  "flex min-w-0 flex-1 flex-col items-center border px-1 py-2 text-center transition-colors",
+                  "rank-step flex min-w-0 flex-1 flex-col items-center border px-1 py-2 text-center transition-colors",
                   isCurrent
                     ? "border-[rgba(84,221,255,0.45)] bg-[rgba(59,158,255,0.12)]"
                     : isPassed

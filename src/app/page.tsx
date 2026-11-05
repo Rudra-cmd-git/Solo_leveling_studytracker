@@ -16,9 +16,11 @@ import { SessionRow } from "@/components/session-row";
 import { StatsGrid } from "@/components/stats-grid";
 import { StatusWindow } from "@/components/status-window";
 import { SystemPanel } from "@/components/system-panel";
+import { AnimatedBar } from "@/components/motion/animated-bar";
+import { CountUp } from "@/components/motion/count-up";
+import { GoalRing } from "@/components/motion/goal-ring";
 import { getAppData } from "@/lib/data";
 import { longDate } from "@/lib/dates";
-import { formatMinutes } from "@/lib/game";
 import { formatNumber, progressUnit } from "@/lib/utils";
 
 export default async function DashboardPage() {
@@ -78,34 +80,23 @@ export default async function DashboardPage() {
           className="boot-in boot-in-delay-2 flex flex-col"
         >
           <div className="flex flex-1 flex-col items-center justify-center gap-5 py-2">
-            <div
-              className="relative grid h-40 w-40 place-items-center rounded-full"
-              style={{
-                background: `conic-gradient(#54ddff ${goalPercent}%, rgba(59,158,255,0.08) 0)`,
-                boxShadow: "0 0 35px rgba(59,158,255,0.12)",
-              }}
-            >
-              <div className="absolute inset-[3px] rounded-full border border-[rgba(84,221,255,0.28)] bg-[#040b16]" />
-              <div className="relative text-center">
-                <p className="hud-label">Today</p>
-                <p className="mt-1 font-display text-3xl font-semibold text-ice">
-                  {formatMinutes(data.totals.todayMinutes)}
-                </p>
-                <p className="mt-1 text-[0.6rem] tracking-[0.15em] text-muted uppercase">
-                  of {data.settings.dailyGoalMinutes}m goal
-                </p>
-              </div>
-            </div>
+            <GoalRing
+              minutes={data.totals.todayMinutes}
+              goal={data.settings.dailyGoalMinutes}
+              percent={goalPercent}
+            />
 
             <div className="w-full">
               <div className="mb-1.5 flex items-center justify-between text-[0.62rem] text-muted">
                 <span className="hud-label">Daily progress</span>
-                <span className="font-mono text-glow">
-                  {Math.round(goalPercent)}%
-                </span>
+                <CountUp
+                  value={Math.round(goalPercent)}
+                  suffix="%"
+                  className="font-mono text-glow"
+                />
               </div>
               <div className="stat-track">
-                <div className="stat-fill" style={{ width: `${goalPercent}%` }} />
+                <AnimatedBar className="stat-fill" percent={goalPercent} />
               </div>
             </div>
 

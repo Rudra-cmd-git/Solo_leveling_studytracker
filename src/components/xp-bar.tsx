@@ -1,3 +1,6 @@
+"use client";
+
+import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 
 interface XpBarProps {
@@ -15,7 +18,13 @@ export function XpBar({ percent, className }: XpBarProps) {
       aria-valuemax={100}
       aria-valuenow={Math.round(safePercent)}
     >
-      <div className="xp-fill" style={{ width: `${safePercent}%` }} />
+      <motion.div
+        className="xp-fill"
+        initial={{ width: 0 }}
+        animate={{ width: `${safePercent}%` }}
+        transition={{ type: "spring", stiffness: 110, damping: 20, mass: 0.7 }}
+        style={{ transition: "none" }}
+      />
     </div>
   );
 }

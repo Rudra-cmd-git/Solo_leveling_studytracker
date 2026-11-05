@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { AlertTriangle, CheckCircle2, Info, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -37,9 +38,7 @@ export function SystemToast({
     return () => window.clearTimeout(timer);
   }, [toast, onClose]);
 
-  if (!toast) return null;
-
-  const tone = toast.tone ?? "system";
+  const tone = toast?.tone ?? "system";
   const Icon =
     tone === "success"
       ? CheckCircle2
@@ -49,27 +48,37 @@ export function SystemToast({
 
   return (
     <div className="pointer-events-none fixed inset-x-4 bottom-24 z-50 flex justify-center lg:bottom-8 lg:left-auto lg:right-8 lg:justify-end">
-      <div
-        className={cn(
-          "system-toast pointer-events-auto flex w-full max-w-sm items-start gap-3 p-3.5",
-          toneStyles[tone],
-        )}
-        role="status"
-      >
-        <Icon className={cn("mt-0.5 h-4.5 w-4.5 shrink-0", toneText[tone])} />
-        <div className="min-w-0 flex-1">
-          <p className="hud-label">{toast.title}</p>
-          <p className="mt-1 text-sm leading-snug text-ice">{toast.message}</p>
-        </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="text-muted transition-colors hover:text-white"
-          aria-label="Dismiss notification"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      </div>
+      <AnimatePresence>
+        {toast ? (
+          <motion.div
+            key={`${toast.title}-${toast.message}`}
+            className={cn(
+              "system-toast pointer-events-auto flex w-full max-w-sm items-start gap-3 p-3.5",
+              toneStyles[tone],
+            )}
+            role="status"
+            style={{ animation: "none" }}
+            initial={{ opacity: 0, y: 18, scale: 0.96, filter: "blur(4px)" }}
+            animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+            exit={{ opacity: 0, y: 12, scale: 0.97, filter: "blur(4px)" }}
+            transition={{ type: "spring", stiffness: 320, damping: 28 }}
+          >
+            <Icon className={cn("mt-0.5 h-4.5 w-4.5 shrink-0", toneText[tone])} />
+            <div className="min-w-0 flex-1">
+              <p className="hud-label">{toast.title}</p>
+              <p className="mt-1 text-sm leading-snug text-ice">{toast.message}</p>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-muted transition-colors hover:text-white"
+              aria-label="Dismiss notification"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }

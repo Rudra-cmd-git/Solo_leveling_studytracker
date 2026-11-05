@@ -1,3 +1,6 @@
+"use client";
+
+import { motion } from "motion/react";
 import { Clock, Sparkles, Target } from "lucide-react";
 import type { SessionData } from "@/lib/types";
 import { formatMinutes } from "@/lib/game";
@@ -8,15 +11,25 @@ export function SessionRow({
   session,
   actions,
   className,
+  index = 0,
 }: {
   session: SessionData;
   actions?: React.ReactNode;
   className?: string;
+  index?: number;
 }) {
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, x: -18 }}
+      transition={{
+        duration: 0.3,
+        delay: Math.min(index * 0.03, 0.24),
+        ease: [0.16, 1, 0.3, 1],
+      }}
       className={cn(
-        "flex items-center gap-3 border-b border-[rgba(84,221,255,0.08)] py-3 last:border-b-0",
+        "session-row flex items-center gap-3 border-b border-[rgba(84,221,255,0.08)] py-3 last:border-b-0",
         className,
       )}
     >
@@ -66,6 +79,6 @@ export function SessionRow({
         </span>
         {actions}
       </div>
-    </div>
+    </motion.div>
   );
 }

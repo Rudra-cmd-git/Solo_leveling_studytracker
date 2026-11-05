@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion } from "motion/react";
 import {
   History,
   LayoutDashboard,
@@ -104,6 +105,13 @@ export function SideNavigation({ shell }: { shell: ShellData }) {
               className={cn("nav-item", active && "nav-item--active")}
               aria-current={active ? "page" : undefined}
             >
+              {active ? (
+                <motion.span
+                  layoutId="side-nav-active"
+                  className="absolute top-1/2 left-0 h-6 w-[2px] -translate-y-1/2 bg-glow shadow-[0_0_10px_#54ddff]"
+                  transition={{ type: "spring", stiffness: 520, damping: 38 }}
+                />
+              ) : null}
               <Icon className="h-4 w-4" strokeWidth={1.6} />
               <span className="flex-1">{item.label}</span>
               <span className="text-[0.56rem] tracking-[0.1em] text-muted/70">
@@ -198,7 +206,11 @@ export function MobileNavigation() {
               aria-current={active ? "page" : undefined}
             >
               {active ? (
-                <span className="absolute inset-x-2 top-0 h-px bg-glow shadow-[0_0_8px_#54ddff]" />
+                <motion.span
+                  layoutId="mobile-nav-active"
+                  className="absolute inset-x-2 top-0 h-px bg-glow shadow-[0_0_8px_#54ddff]"
+                  transition={{ type: "spring", stiffness: 520, damping: 38 }}
+                />
               ) : null}
               <Icon className="h-[18px] w-[18px]" strokeWidth={1.7} />
               <span>{item.label}</span>

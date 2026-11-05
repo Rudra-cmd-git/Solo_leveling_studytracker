@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { AnimatePresence } from "motion/react";
 import {
   History,
   Pencil,
@@ -154,10 +155,12 @@ export function SessionHistory({
 
         <div className="mt-3">
           {filtered.length > 0 ? (
-            filtered.map((session) => (
+            <AnimatePresence initial={false}>
+              {filtered.map((session, index) => (
               <SessionRow
                 key={session.id}
                 session={session}
+                index={index}
                 actions={
                   <div className="flex items-center gap-1">
                     <button
@@ -190,7 +193,8 @@ export function SessionHistory({
                   </div>
                 }
               />
-            ))
+              ))}
+            </AnimatePresence>
           ) : (
             <div className="flex min-h-64 flex-col items-center justify-center text-center">
               <div className="grid h-12 w-12 place-items-center border border-[rgba(84,221,255,0.16)] bg-[rgba(59,158,255,0.04)]">
@@ -214,21 +218,24 @@ export function SessionHistory({
         ) : null}
       </div>
 
-      {editing ? (
-        <SessionEditDialog
-          session={editing}
-          subjects={subjects}
-          todayKey={todayKey}
-          onClose={() => setEditing(null)}
-          onSaved={(message) =>
-            setToast({
-              title: "Record updated",
-              message,
-              tone: "success",
-            })
-          }
-        />
-      ) : null}
+      <AnimatePresence>
+        {editing ? (
+          <SessionEditDialog
+            key="session-edit"
+            session={editing}
+            subjects={subjects}
+            todayKey={todayKey}
+            onClose={() => setEditing(null)}
+            onSaved={(message) =>
+              setToast({
+                title: "Record updated",
+                message,
+                tone: "success",
+              })
+            }
+          />
+        ) : null}
+      </AnimatePresence>
 
       <SystemToast toast={toast} onClose={() => setToast(null)} />
     </>

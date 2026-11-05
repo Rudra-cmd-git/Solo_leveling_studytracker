@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CircleCheck, Flame, Shield, Sparkles } from "lucide-react";
 import { FocusTimer } from "@/components/focus-timer";
+import { AnimatedBar } from "@/components/motion/animated-bar";
 import { PageHeader } from "@/components/page-header";
 import { SystemPanel } from "@/components/system-panel";
 import { getAppData } from "@/lib/data";
@@ -47,9 +48,9 @@ export default async function FocusPage() {
                     </span>
                   </div>
                   <div className="mt-1.5 stat-track">
-                    <div
+                    <AnimatedBar
                       className="stat-fill"
-                      style={{ width: `${quest.percent}%` }}
+                      percent={quest.percent}
                     />
                   </div>
                   <p className="mt-1 text-[0.58rem] tracking-[0.06em] text-muted uppercase">

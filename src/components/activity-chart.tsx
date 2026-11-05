@@ -1,6 +1,7 @@
 import type { DayActivity } from "@/lib/types";
 import { formatMinutes } from "@/lib/game";
 import { cn } from "@/lib/utils";
+import { CountUp } from "./motion/count-up";
 import { SystemPanel } from "./system-panel";
 
 export function ActivityChart({
@@ -18,23 +19,27 @@ export function ActivityChart({
     <SystemPanel label="Seven-day activity" className="boot-in-delay-2 boot-in">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="title-display text-xl text-ice">
-            {formatMinutes(weekMinutes)}
-          </p>
+          <CountUp
+            value={weekMinutes}
+            format="minutes"
+            className="block font-display text-xl text-ice"
+          />
           <p className="mt-1 text-[0.62rem] tracking-[0.14em] text-muted uppercase">
             Total study this week
           </p>
         </div>
         <div className="text-right">
           <p className="hud-label">Peak</p>
-          <p className="mt-1 font-mono text-sm text-glow">
-            {formatMinutes(peak)}
-          </p>
+          <CountUp
+            value={peak}
+            format="minutes"
+            className="mt-1 block font-mono text-sm text-glow"
+          />
         </div>
       </div>
 
       <div className="mt-6 flex h-44 items-end gap-1.5 sm:gap-2.5">
-        {days.map((day) => {
+        {days.map((day, index) => {
           const isToday = day.date === todayKey;
           return (
             <div
@@ -47,10 +52,14 @@ export function ActivityChart({
               <div className="relative flex h-32 w-full items-end justify-center">
                 <div className="absolute inset-x-0 bottom-0 h-px bg-[rgba(84,221,255,0.1)]" />
                 <div
-                  className={cn("bar-mark w-full max-w-8", !isToday && day.minutes === 0 && "bar-mark--muted")}
+                  className={cn(
+                    "bar-mark bar-rise w-full max-w-8",
+                    !isToday && day.minutes === 0 && "bar-mark--muted",
+                  )}
                   style={{
                     height: `${Math.max(day.minutes > 0 ? 6 : 2, day.level)}%`,
                     opacity: isToday ? 1 : 0.58,
+                    animationDelay: `${index * 70}ms`,
                   }}
                   title={`${formatMinutes(day.minutes)} on ${day.date}`}
                 />

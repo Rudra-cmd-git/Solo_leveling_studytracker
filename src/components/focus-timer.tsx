@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { AnimatePresence, motion } from "motion/react";
 import {
   AlertTriangle,
   Check,
@@ -64,6 +65,7 @@ export function FocusTimer({
   const [completedCycles, setCompletedCycles] = useState(0);
   const [breakTotal, setBreakTotal] = useState(0);
   const [breakLong, setBreakLong] = useState(false);
+  const [burstKey, setBurstKey] = useState(0);
 
   const endAtRef = useRef<number | null>(null);
   const workDoneRef = useRef(false);
@@ -105,6 +107,7 @@ export function FocusTimer({
     workDoneRef.current = false;
     setRemaining(seconds);
     endAtRef.current = Date.now() + seconds * 1000;
+    setBurstKey((value) => value + 1);
     setPhase("running");
   }
 
@@ -350,6 +353,8 @@ export function FocusTimer({
         : ((completedCycles - 1) % cyclesBeforeLongBreak) + 1
       : 0;
   const ringColor = phase === "break" ? "#3dd6a3" : "#54ddff";
+  const isActive = phase === "running" || phase === "break";
+  const isCritical = phase === "running" && remaining <= 10 && remaining > 0;
 
   return (
     <>
@@ -392,9 +397,55 @@ export function FocusTimer({
         <div className="mt-5 grid gap-7 lg:grid-cols-[1fr_0.85fr] lg:items-center">
           <div className="flex flex-col items-center">
             <div className="relative">
+              <motion.div
+                aria-hidden="true"
+                className="timer-aura pointer-events-none absolute inset-2 rounded-full"
+                style={{
+                  background:
+                    phase === "break"
+                      ? "radial-gradient(circle, rgba(61,214,163,0.2), rgba(61,214,163,0.05) 48%, transparent 72%)"
+                      : undefined,
+                }}
+                animate={
+                  isActive
+                    ? { scale: [1, 1.045, 1], opacity: [0.55, 0.95, 0.55] }
+                    : { scale: 1, opacity: 0.35 }
+                }
+                transition={
+                  isActive
+                    ? { duration: 3.2, repeat: Infinity, ease: "easeInOut" }
+                    : { duration: 0.4 }
+                }
+              />
+              <motion.div
+                key={phase}
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-6 rounded-full border"
+                style={{ borderColor: `${ringColor}66` }}
+                initial={{ opacity: 0.7, scale: 0.88 }}
+                animate={{ opacity: 0, scale: 1.22 }}
+                transition={{ duration: 0.75, ease: "easeOut" }}
+              />
+              <AnimatePresence>
+                {burstKey > 0 ? (
+                  <motion.div
+                    key={burstKey}
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-4 rounded-full border-2"
+                    style={{
+                      borderColor: ringColor,
+                      boxShadow: `0 0 40px ${ringColor}88`,
+                    }}
+                    initial={{ opacity: 0.85, scale: 0.65 }}
+                    animate={{ opacity: 0, scale: 1.65 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+                  />
+                ) : null}
+              </AnimatePresence>
               <svg
                 viewBox="0 0 320 320"
-                className="h-72 w-72 max-w-full sm:h-80 sm:w-80"
+                className="relative h-72 w-72 max-w-full sm:h-80 sm:w-80"
                 aria-hidden="true"
               >
                 <circle
@@ -449,9 +500,24 @@ export function FocusTimer({
                         : "Short break"
                       : "Time remaining"}
                 </p>
-                <p className="mt-2 font-mono text-4xl font-medium tracking-[0.08em] text-ice sm:text-5xl">
+                <motion.p
+                  className="mt-2 font-mono text-4xl font-medium tracking-[0.08em] text-ice sm:text-5xl"
+                  animate={
+                    isCritical
+                      ? {
+                          scale: [1, 1.06, 1],
+                          color: ["#dcf6ff", "#ff9aa8", "#dcf6ff"],
+                        }
+                      : { scale: 1 }
+                  }
+                  transition={
+                    isCritical
+                      ? { duration: 1, repeat: Infinity, ease: "easeInOut" }
+                      : { duration: 0.3 }
+                  }
+                >
                   {elapsedClock(remaining)}
-                </p>
+                </motion.p>
                 <p className="mt-2 max-w-44 truncate text-center text-[0.64rem] tracking-[0.12em] text-muted uppercase">
                   {phase === "break"
                     ? `Recovery · ${Math.round(breakTotal / 60)} min`
@@ -703,13 +769,28 @@ export function FocusTimer({
         </div>
       </SystemPanel>
 
-      {phase === "review" ? (
-        <div className="overlay-backdrop z-[70]">
-          <SystemPanel
-            hero
-            className="max-h-[92vh] w-full max-w-lg overflow-y-auto"
-            label="Session record"
+      <AnimatePresence>
+        {phase === "review" ? (
+          <motion.div
+            key="review"
+            className="overlay-backdrop z-[70]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.24 }}
           >
+            <motion.div
+              className="w-full max-w-lg"
+              initial={{ opacity: 0, y: 28, scale: 0.94, filter: "blur(10px)" }}
+              animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+              exit={{ opacity: 0, y: 18, scale: 0.97, filter: "blur(6px)" }}
+              transition={{ type: "spring", stiffness: 220, damping: 25 }}
+            >
+              <SystemPanel
+                hero
+                className="max-h-[92vh] w-full overflow-y-auto"
+                label="Session record"
+              >
             <button
               type="button"
               onClick={closeReview}
@@ -803,9 +884,11 @@ export function FocusTimer({
                 )}
               </button>
             </div>
-          </SystemPanel>
-        </div>
-      ) : null}
+              </SystemPanel>
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       <RewardOverlay reward={reward} onClose={() => setReward(null)} />
       <SystemToast toast={toast} onClose={() => setToast(null)} />

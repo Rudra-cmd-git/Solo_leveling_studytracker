@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { motion } from "motion/react";
 import { AlertTriangle, Save, X } from "lucide-react";
 import { updateSession } from "@/app/actions";
 import { sessionXp } from "@/lib/game";
@@ -61,8 +62,22 @@ export function SessionEditDialog({
   }
 
   return (
-    <div className="overlay-backdrop z-[75]" onClick={onClose}>
-      <div onClick={(event) => event.stopPropagation()} className="w-full max-w-lg">
+    <motion.div
+      className="overlay-backdrop z-[75]"
+      onClick={onClose}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.24 }}
+    >
+      <motion.div
+        onClick={(event) => event.stopPropagation()}
+        className="w-full max-w-lg"
+        initial={{ opacity: 0, y: 26, scale: 0.94, filter: "blur(8px)" }}
+        animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+        exit={{ opacity: 0, y: 18, scale: 0.97, filter: "blur(6px)" }}
+        transition={{ type: "spring", stiffness: 240, damping: 26 }}
+      >
         <SystemPanel
           hero
           label="Edit record"
@@ -221,7 +236,7 @@ export function SessionEditDialog({
             </div>
           </form>
         </SystemPanel>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

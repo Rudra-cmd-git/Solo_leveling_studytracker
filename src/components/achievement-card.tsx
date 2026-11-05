@@ -1,6 +1,7 @@
 import { Lock, Sparkles } from "lucide-react";
 import type { AchievementView } from "@/lib/types";
 import { cn, formatNumber } from "@/lib/utils";
+import { AnimatedBar } from "./motion/animated-bar";
 import { SystemIcon } from "./system-icon";
 
 export function AchievementCard({
@@ -13,7 +14,7 @@ export function AchievementCard({
   return (
     <div
       className={cn(
-        "relative border transition-colors",
+        "achievement-card relative border transition-colors",
         compact ? "p-2.5" : "p-3.5",
         achievement.earned
           ? "border-[rgba(255,191,90,0.26)] bg-[rgba(255,191,90,0.045)]"
@@ -56,9 +57,9 @@ export function AchievementCard({
           {!achievement.earned ? (
             <div className="mt-2">
               <div className="stat-track">
-                <div
+                <AnimatedBar
                   className="stat-fill bg-gradient-to-r from-[#2d6fa8] to-[#54ddff]/70"
-                  style={{ width: `${achievement.percent}%` }}
+                  percent={achievement.percent}
                 />
               </div>
               <p className="mt-1 text-right font-mono text-[0.52rem] text-muted">

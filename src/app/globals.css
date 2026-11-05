@@ -311,6 +311,29 @@ a {
     transform 160ms ease;
 }
 
+.system-button::after {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.22) 50%,
+    transparent 70%
+  );
+  transform: translateX(-130%);
+  transition: transform 560ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.system-button:hover:not(:disabled)::after {
+  transform: translateX(130%);
+}
+
+.system-button:active:not(:disabled) {
+  transform: translateY(1px) scale(0.985);
+}
+
 .system-button:hover:not(:disabled) {
   border-color: rgba(84, 221, 255, 0.92);
   background:
@@ -953,4 +976,144 @@ a {
 
 .rank-badge--large .rank-badge__letter {
   font-size: 2.5rem;
+}
+
+.reward-flash {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at 50% 45%,
+    rgba(220, 246, 255, 0.95),
+    rgba(84, 221, 255, 0.35) 35%,
+    transparent 72%
+  );
+  mix-blend-mode: screen;
+}
+
+.reward-shockwave {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 40rem;
+  height: 40rem;
+  margin-top: -20rem;
+  margin-left: -20rem;
+  pointer-events: none;
+  border: 2px solid rgba(84, 221, 255, 0.7);
+  border-radius: 999px;
+  box-shadow:
+    0 0 40px rgba(84, 221, 255, 0.45),
+    inset 0 0 60px rgba(84, 221, 255, 0.16);
+}
+
+.reward-shockwave--late {
+  border-color: rgba(255, 191, 90, 0.55);
+  box-shadow: 0 0 30px rgba(255, 191, 90, 0.35);
+}
+
+.achievement-card {
+  transition:
+    transform 220ms ease,
+    border-color 220ms ease,
+    box-shadow 220ms ease;
+}
+
+.achievement-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.subject-row,
+.rank-step {
+  animation: reveal-up 550ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.session-row {
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    transform 180ms ease;
+}
+
+.session-row:hover {
+  background: rgba(59, 158, 255, 0.05);
+  transform: translateX(2px);
+}
+
+.heat-grid .heat-cell {
+  animation: heat-in 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.bar-rise {
+  animation: bar-rise 760ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: bottom center;
+}
+
+.xp-area {
+  animation: fade-in 900ms ease 0.35s both;
+}
+
+.xp-line {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw-line 1600ms cubic-bezier(0.16, 1, 0.3, 1) 0.15s forwards;
+}
+
+.xp-point {
+  animation: fade-in 500ms ease both;
+}
+
+.timer-aura {
+  background: radial-gradient(
+    circle,
+    rgba(84, 221, 255, 0.18),
+    rgba(59, 158, 255, 0.05) 48%,
+    transparent 72%
+  );
+}
+
+@keyframes heat-in {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes bar-rise {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes draw-line {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reward-flash,
+  .reward-shockwave {
+    display: none;
+  }
 }

@@ -77,9 +77,11 @@ export function XpTrend({ days }: { days: DayActivity[] }) {
             );
           })}
 
-          <path d={area} fill="url(#xp-area)" />
+          <path className="xp-area" d={area} fill="url(#xp-area)" />
           <path
+            className="xp-line"
             d={line}
+            pathLength={1}
             fill="none"
             stroke="url(#xp-line)"
             strokeWidth="2"
@@ -88,9 +90,11 @@ export function XpTrend({ days }: { days: DayActivity[] }) {
             style={{ filter: "drop-shadow(0 0 4px rgba(84,221,255,0.55))" }}
           />
 
-          {points.map((point) => (
+          {points.map((point, index) => (
             <g key={point.day.date}>
               <circle
+                className="xp-point"
+                style={{ animationDelay: `${0.5 + index * 0.05}s` }}
                 cx={point.x}
                 cy={point.y}
                 r={point.day.xp > 0 ? 2.8 : 1.7}

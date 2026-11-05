@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { ArrowRight, Flame, Timer, Trophy, Zap } from "lucide-react";
 import type { AppData } from "@/lib/types";
-import { formatMinutes } from "@/lib/game";
 import { formatNumber } from "@/lib/utils";
+import { CountUp } from "./motion/count-up";
 import { RankBadge } from "./rank-badge";
 import { StatsGrid } from "./stats-grid";
 import { SystemPanel } from "./system-panel";
@@ -33,7 +33,7 @@ export function StatusWindow({ data }: { data: AppData }) {
               </h2>
               <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
                 <span className="font-mono text-xs tracking-[0.14em] text-glow">
-                  LEVEL {data.progress.level}
+                  LEVEL <CountUp value={data.progress.level} />
                 </span>
                 <span className="h-3 w-px bg-[rgba(84,221,255,0.22)]" />
                 <span
@@ -50,12 +50,13 @@ export function StatusWindow({ data }: { data: AppData }) {
             <div className="mb-2 flex items-end justify-between gap-3">
               <span className="hud-label">Experience</span>
               <span className="font-mono text-[0.68rem] text-mist">
-                <span className="text-glow">
-                  {formatNumber(data.progress.xpIntoLevel)}
-                </span>
+                <CountUp
+                  value={data.progress.xpIntoLevel}
+                  className="text-glow"
+                />
                 <span className="text-muted">
                   {" "}
-                  / {formatNumber(data.progress.xpForNext)} XP
+                  / <CountUp value={data.progress.xpForNext} /> XP
                 </span>
               </span>
             </div>
@@ -72,32 +73,30 @@ export function StatusWindow({ data }: { data: AppData }) {
           <MetricCard
             icon={Flame}
             label="Streak"
-            value={`${data.streak.current}`}
+            value={data.streak.current}
             suffix="days"
             accent="text-gold"
           />
           <MetricCard
             icon={Timer}
             label="Today"
-            value={formatMinutes(data.totals.todayMinutes)}
+            value={data.totals.todayMinutes}
+            format="minutes"
             suffix={`/ ${data.settings.dailyGoalMinutes}m goal`}
             accent="text-glow"
           />
           <MetricCard
             icon={Zap}
             label="Total study"
-            value={
-              totalHours >= 10
-                ? `${Math.round(totalHours)}h`
-                : `${totalHours.toFixed(1)}h`
-            }
+            value={totalHours}
+            format="hours"
             suffix={`${data.totals.sessions} sessions`}
             accent="text-system"
           />
           <MetricCard
             icon={Trophy}
             label="Quests cleared"
-            value={`${data.totals.questsClaimed}`}
+            value={data.totals.questsClaimed}
             suffix="claimed"
             accent="text-mint"
           />
@@ -130,24 +129,28 @@ function MetricCard({
   icon: Icon,
   label,
   value,
+  format,
   suffix,
   accent,
 }: {
   icon: typeof Flame;
   label: string;
-  value: string;
+  value: number;
+  format?: "number" | "minutes" | "hours" | "decimal";
   suffix: string;
   accent: string;
 }) {
   return (
-    <div className="border border-[rgba(84,221,255,0.11)] bg-[rgba(3,10,20,0.48)] px-3 py-3">
+    <div className="border border-[rgba(84,221,255,0.11)] bg-[rgba(3,10,20,0.48)] px-3 py-3 transition-colors hover:border-[rgba(84,221,255,0.24)]">
       <div className="flex items-center gap-1.5">
         <Icon className={`h-3.5 w-3.5 ${accent}`} strokeWidth={1.7} />
         <span className="hud-label">{label}</span>
       </div>
-      <p className="mt-2 truncate font-display text-xl font-semibold text-ice">
-        {value}
-      </p>
+      <CountUp
+        value={value}
+        format={format}
+        className="mt-2 block truncate font-display text-xl font-semibold text-ice"
+      />
       <p className="mt-0.5 truncate text-[0.6rem] tracking-[0.08em] text-muted uppercase">
         {suffix}
       </p>

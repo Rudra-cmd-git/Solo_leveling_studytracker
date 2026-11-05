@@ -53,13 +53,14 @@ export function Heatmap({ days }: { days: HeatmapDay[] }) {
               </span>
             ))}
           </div>
-          <div className="grid grid-flow-col grid-rows-7 gap-1">
-            {weeks.flatMap((week) =>
-              week.map((day) => (
+          <div className="heat-grid grid grid-flow-col grid-rows-7 gap-1">
+            {weeks.flatMap((week, weekIndex) =>
+              week.map((day, dayIndex) => (
                 <span
                   key={day.date}
-                  className="heat-cell h-3.5 w-3.5 sm:h-4 sm:w-4"
+                  className="heat-cell h-3.5 w-3.5 transition-transform duration-200 hover:scale-125 sm:h-4 sm:w-4"
                   data-level={day.level}
+                  style={{ animationDelay: `${(weekIndex * 7 + dayIndex) * 7}ms` }}
                   title={`${monthDay(day.date)} · ${formatMinutes(day.minutes)}`}
                 />
               )),

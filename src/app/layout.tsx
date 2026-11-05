@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { Metadata, Viewport } from "next";
 import { Cinzel, JetBrains_Mono, Rajdhani } from "next/font/google";
 import { AppShell } from "@/components/app-shell";
+import { MotionProvider } from "@/components/motion/motion-provider";
 import { OnboardingGate } from "@/components/onboarding-gate";
 import { getSettingsData, getShellData } from "@/lib/data";
 import "./globals.css";
@@ -48,10 +49,12 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       className={`${cinzel.variable} ${rajdhani.variable} ${jetbrainsMono.variable}`}
     >
       <body>
-        <AppShell shell={shell}>{children}</AppShell>
-        {!shell.onboarded ? (
-          <OnboardingGate initialTimeZone={settings.timezone} />
-        ) : null}
+        <MotionProvider>
+          <AppShell shell={shell}>{children}</AppShell>
+          {!shell.onboarded ? (
+            <OnboardingGate initialTimeZone={settings.timezone} />
+          ) : null}
+        </MotionProvider>
       </body>
     </html>
   );

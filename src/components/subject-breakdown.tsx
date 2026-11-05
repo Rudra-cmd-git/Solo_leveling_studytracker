@@ -1,6 +1,7 @@
 import { BookOpen } from "lucide-react";
 import type { SubjectActivity } from "@/lib/types";
 import { formatMinutes } from "@/lib/game";
+import { AnimatedBar } from "./motion/animated-bar";
 import { SystemPanel } from "./system-panel";
 
 export function SubjectBreakdown({
@@ -30,8 +31,8 @@ export function SubjectBreakdown({
         </div>
       ) : (
         <div className="mt-5 space-y-4">
-          {subjects.map((subject) => (
-            <div key={subject.id}>
+          {subjects.map((subject, index) => (
+            <div key={subject.id} className="subject-row" style={{ animationDelay: `${index * 80}ms` }}>
               <div className="flex items-center justify-between gap-2">
                 <div className="flex min-w-0 items-center gap-2">
                   <span
@@ -47,10 +48,11 @@ export function SubjectBreakdown({
                 </span>
               </div>
               <div className="mt-1.5 h-1.5 border border-[rgba(84,221,255,0.1)] bg-[rgba(1,6,12,0.8)]">
-                <div
+                <AnimatedBar
                   className="h-full"
+                  percent={subject.percent}
+                  delay={index * 0.08}
                   style={{
-                    width: `${subject.percent}%`,
                     backgroundColor: subject.color,
                     boxShadow: `0 0 8px ${subject.color}66`,
                   }}

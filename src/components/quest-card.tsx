@@ -2,11 +2,14 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { motion } from "motion/react";
 import { Check, Lock, Sparkles } from "lucide-react";
 import { claimQuest } from "@/app/actions";
 import { RANKS } from "@/lib/game";
+import { fireQuestConfetti } from "@/lib/confetti";
 import type { QuestView } from "@/lib/types";
 import { cn, formatNumber, progressUnit } from "@/lib/utils";
+import { AnimatedBar } from "./motion/animated-bar";
 import { RewardOverlay, type RewardState } from "./reward-overlay";
 import { SystemToast, type ToastState } from "./system-toast";
 
@@ -47,6 +50,7 @@ export function QuestCard({ quest }: { quest: QuestView }) {
           achievements: result.achievements,
         });
       } else {
+        void fireQuestConfetti();
         setToast({
           title: "Quest complete",
           message: `${quest.title} cleared. +${formatNumber(result.xpReward ?? quest.xpReward)} XP`,
@@ -58,7 +62,11 @@ export function QuestCard({ quest }: { quest: QuestView }) {
 
   return (
     <>
-      <div
+      <motion.div
+        initial={{ opacity: 0, y: 14, filter: "blur(4px)" }}
+        animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+        transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+        whileHover={{ y: -3 }}
         className={cn(
           "system-panel system-panel--quiet p-4",
           quest.complete && "quest-complete",
@@ -84,7 +92,14 @@ export function QuestCard({ quest }: { quest: QuestView }) {
                 </span>
               ) : null}
               {quest.claimed ? (
-                <span className="quest-stamp px-1.5 py-0.5">Cleared</span>
+                <motion.span
+                  className="quest-stamp px-1.5 py-0.5"
+                  initial={{ opacity: 0, scale: 2.4, rotate: -14 }}
+                  animate={{ opacity: 1, scale: 1, rotate: -2 }}
+                  transition={{ type: "spring", stiffness: 240, damping: 14 }}
+                >
+                  Cleared
+                </motion.span>
               ) : null}
             </div>
             <h3 className="mt-1.5 font-display text-base font-semibold tracking-[0.06em] text-ice">
@@ -111,20 +126,37 @@ export function QuestCard({ quest }: { quest: QuestView }) {
             </span>
           </div>
           <div className="stat-track">
-            <div
+            <AnimatedBar
               className={cn(
                 "stat-fill",
                 quest.complete && "bg-gradient-to-r from-[#1f9b74] to-[#54ffd0]",
               )}
-              style={{ width: `${quest.percent}%` }}
+              percent={quest.percent}
             />
           </div>
         </div>
 
-        <button
+        <motion.button
           type="button"
           onClick={claim}
           disabled={!quest.complete || quest.claimed || isPending}
+          whileTap={quest.complete && !quest.claimed ? { scale: 0.97 } : undefined}
+          animate={
+            quest.complete && !quest.claimed && !isPending
+              ? {
+                  boxShadow: [
+                    "0 0 0 rgba(61,214,163,0)",
+                    "0 0 22px rgba(61,214,163,0.45)",
+                    "0 0 0 rgba(61,214,163,0)",
+                  ],
+                }
+              : undefined
+          }
+          transition={
+            quest.complete && !quest.claimed
+              ? { duration: 1.8, repeat: Infinity, ease: "easeInOut" }
+              : undefined
+          }
           className={cn(
             "system-button system-button--small mt-4 w-full",
             quest.claimed && "system-button--ghost",
@@ -147,8 +179,8 @@ export function QuestCard({ quest }: { quest: QuestView }) {
               <Lock className="h-3.5 w-3.5" /> Incomplete
             </>
           )}
-        </button>
-      </div>
+        </motion.button>
+      </motion.div>
 
       <RewardOverlay reward={reward} onClose={() => setReward(null)} />
       <SystemToast toast={toast} onClose={() => setToast(null)} />
