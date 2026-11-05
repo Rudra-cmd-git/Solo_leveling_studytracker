@@ -417,6 +417,13 @@ export function FocusTimer({
                     : { duration: 0.4 }
                 }
               />
+              {/* Manhwa Battlefield Focus Speedlines */}
+              {isActive && phase === "running" ? (
+                <div
+                  aria-hidden="true"
+                  className="manhwa-speedlines pointer-events-none absolute -inset-6 rounded-full"
+                />
+              ) : null}
               <motion.div
                 key={phase}
                 aria-hidden="true"

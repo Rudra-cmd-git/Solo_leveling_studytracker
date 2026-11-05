@@ -1147,6 +1147,47 @@ a {
   animation: shield-charge 2.4s ease-in-out infinite;
 }
 
+/* Solo Leveling - Manhwa Speedlines & Mana Aura */
+@keyframes manhwa-speedline-pulse {
+  0%, 100% {
+    opacity: 0.15;
+    transform: scale(0.96) rotate(0deg);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(1.04) rotate(4deg);
+  }
+}
+
+.manhwa-speedlines {
+  background: repeating-conic-gradient(
+    from 0deg,
+    rgba(84, 221, 255, 0.12) 0deg 2deg,
+    transparent 2deg 12deg,
+    rgba(59, 158, 255, 0.08) 12deg 14deg,
+    transparent 14deg 24deg
+  );
+  mask-image: radial-gradient(circle, transparent 46%, black 72%);
+  -webkit-mask-image: radial-gradient(circle, transparent 46%, black 72%);
+  animation: manhwa-speedline-pulse 2.8s ease-in-out infinite;
+}
+
+/* Solo Leveling Monarch Shadow Mist */
+@keyframes shadow-haze {
+  0%, 100% {
+    transform: translateY(0) scaleX(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translateY(-8px) scaleX(1.05);
+    opacity: 0.55;
+  }
+}
+
+.shadow-monarch-haze {
+  animation: shadow-haze 6s ease-in-out infinite;
+}
+
 /* Sci-fi System Skeleton Scanner */
 @keyframes system-shimmer {
   0% {
