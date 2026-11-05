@@ -1,6 +1,6 @@
 "use client";
 
-import { animate, useInView, useReducedMotion } from "motion/react";
+import { animate, useInView } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 
 type CountFormat = "number" | "minutes" | "hours" | "decimal";
@@ -48,13 +48,11 @@ export function CountUp({
 }: CountUpProps) {
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true, amount: 0.5 });
-  const reduceMotion = useReducedMotion();
   const fromRef = useRef(0);
   const [animated, setAnimated] = useState(value);
-  const display = reduceMotion ? value : animated;
 
   useEffect(() => {
-    if (reduceMotion || !inView) return;
+    if (!inView) return;
 
     const from = fromRef.current;
     const controls = animate(from, value, {
@@ -67,12 +65,12 @@ export function CountUp({
     });
 
     return () => controls.stop();
-  }, [value, inView, reduceMotion, duration]);
+  }, [value, inView, duration]);
 
   return (
     <span ref={ref} className={className}>
       {prefix}
-      {formatValue(display, format, decimals)}
+      {formatValue(animated, format, decimals)}
       {suffix}
     </span>
   );

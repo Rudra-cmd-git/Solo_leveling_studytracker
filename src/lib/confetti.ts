@@ -2,7 +2,6 @@ type ConfettiFn = typeof import("canvas-confetti");
 
 async function loadConfetti(): Promise<ConfettiFn | null> {
   if (typeof window === "undefined") return null;
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return null;
   const loaded = (await import("canvas-confetti")) as unknown as {
     default?: ConfettiFn;
   };

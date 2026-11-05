@@ -949,6 +949,8 @@ a {
   }
 }
 
+/* Reduced motion query disabled by default so System animations render fully */
+/*
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -959,6 +961,7 @@ a {
     transition-duration: 0.01ms !important;
   }
 }
+*/
 
 .rank-badge--compact {
   width: 3.1rem;
@@ -1202,6 +1205,7 @@ a {
   transform-origin: center center;
 }
 
+/*
 @media (prefers-reduced-motion: reduce) {
   .reward-flash,
   .reward-shockwave {
@@ -1215,3 +1219,4 @@ a {
     animation: none;
   }
 }
+*/
