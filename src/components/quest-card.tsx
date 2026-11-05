@@ -7,17 +7,18 @@ import { Check, Lock, Sparkles } from "lucide-react";
 import { claimQuest } from "@/app/actions";
 import { RANKS } from "@/lib/game";
 import { fireQuestConfetti } from "@/lib/confetti";
-import { playSystemSound } from "@/lib/sound";
 import type { QuestView } from "@/lib/types";
 import { cn, formatNumber, progressUnit } from "@/lib/utils";
 import { AnimatedBar } from "./motion/animated-bar";
 import { RewardOverlay, type RewardState } from "./reward-overlay";
+import { useSfx } from "./sound-provider";
 import { SystemToast, type ToastState } from "./system-toast";
 
 export function QuestCard({ quest }: { quest: QuestView }) {
   const [isPending, startTransition] = useTransition();
   const [reward, setReward] = useState<RewardState | null>(null);
   const [toast, setToast] = useState<ToastState | null>(null);
+  const { play } = useSfx();
   const router = useRouter();
 
   function claim() {
@@ -27,6 +28,7 @@ export function QuestCard({ quest }: { quest: QuestView }) {
       const result = await claimQuest(quest.id);
 
       if (!result.ok) {
+        play("ui.error");
         setToast({
           title: "System warning",
           message: result.error ?? "Could not claim this quest.",
@@ -36,6 +38,7 @@ export function QuestCard({ quest }: { quest: QuestView }) {
       }
 
       router.refresh();
+      play("quest.complete");
 
       if (
         result.leveledUp ||
@@ -52,7 +55,6 @@ export function QuestCard({ quest }: { quest: QuestView }) {
         });
       } else {
         void fireQuestConfetti();
-        playSystemSound("quest-complete");
         setToast({
           title: "Quest complete",
           message: `${quest.title} cleared. +${formatNumber(result.xpReward ?? quest.xpReward)} XP`,
@@ -140,6 +142,7 @@ export function QuestCard({ quest }: { quest: QuestView }) {
 
         <motion.button
           type="button"
+          data-sfx-silent
           onClick={claim}
           disabled={!quest.complete || quest.claimed || isPending}
           whileTap={quest.complete && !quest.claimed ? { scale: 0.97 } : undefined}

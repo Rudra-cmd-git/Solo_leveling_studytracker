@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { Metadata, Viewport } from "next";
 import { Cinzel, JetBrains_Mono, Rajdhani } from "next/font/google";
+import { AmbienceController } from "@/components/ambience-controller";
 import { AppShell } from "@/components/app-shell";
 import { BattlefieldAtmosphere } from "@/components/battlefield-atmosphere";
 import { MotionProvider } from "@/components/motion/motion-provider";
@@ -52,14 +53,15 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     >
       <body>
         <BattlefieldAtmosphere />
-        <SoundProvider initialSoundEnabled={shell.soundEnabled ?? false}>
-          <MotionProvider>
+        <MotionProvider>
+          <SoundProvider enabled={settings.soundEnabled}>
+            <AmbienceController />
             <AppShell shell={shell}>{children}</AppShell>
             {!shell.onboarded ? (
               <OnboardingGate initialTimeZone={settings.timezone} />
             ) : null}
-          </MotionProvider>
-        </SoundProvider>
+          </SoundProvider>
+        </MotionProvider>
       </body>
     </html>
   );

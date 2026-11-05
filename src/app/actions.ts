@@ -616,6 +616,24 @@ export async function updateSettings(
   return { ok: true };
 }
 
+export async function setSoundEnabled(
+  enabled: boolean,
+): Promise<ActionResult> {
+  if (typeof enabled !== "boolean") {
+    return { ok: false, error: "Invalid audio state." };
+  }
+
+  await ensureDatabase();
+
+  await db
+    .update(settings)
+    .set({ soundEnabled: enabled })
+    .where(eq(settings.id, 1));
+
+  revalidateAll();
+  return { ok: true };
+}
+
 export async function completeOnboarding(
   input: OnboardingInput,
 ): Promise<ActionResult> {

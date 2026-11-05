@@ -19,7 +19,7 @@ export const settings = sqliteTable("settings", {
   timezone: text("timezone").notNull().default("Asia/Kolkata"),
   soundEnabled: integer("sound_enabled", { mode: "boolean" })
     .notNull()
-    .default(false),
+    .default(true),
   xpBonusesEnabled: integer("xp_bonuses_enabled", { mode: "boolean" })
     .notNull()
     .default(false),

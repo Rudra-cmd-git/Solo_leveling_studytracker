@@ -25,7 +25,6 @@ export default async function FocusPage() {
           subjects={data.subjects}
           defaultMinutes={data.settings.defaultTimerMinutes}
           todayKey={data.todayKey}
-          soundEnabled={data.settings.soundEnabled}
         />
 
         <div className="space-y-5">

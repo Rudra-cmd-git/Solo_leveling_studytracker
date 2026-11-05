@@ -243,7 +243,7 @@ const SCHEMA_STATEMENTS = [
     daily_goal_minutes INTEGER NOT NULL DEFAULT 60,
     default_timer_minutes INTEGER NOT NULL DEFAULT 25,
     timezone TEXT NOT NULL DEFAULT 'Asia/Kolkata',
-    sound_enabled INTEGER NOT NULL DEFAULT 0,
+    sound_enabled INTEGER NOT NULL DEFAULT 1,
     xp_bonuses_enabled INTEGER NOT NULL DEFAULT 0,
     onboarded INTEGER NOT NULL DEFAULT 0
   )`,
@@ -387,7 +387,7 @@ async function initializeSchema(client: Client): Promise<void> {
     {
       sql: `INSERT OR IGNORE INTO settings
         (id, daily_goal_minutes, default_timer_minutes, timezone, sound_enabled, xp_bonuses_enabled, onboarded)
-        VALUES (1, 60, 25, 'Asia/Kolkata', 0, 0, 0)`,
+        VALUES (1, 60, 25, 'Asia/Kolkata', 1, 0, 0)`,
       args: [],
     },
     ...DEFAULT_SUBJECTS.map((subject) => ({

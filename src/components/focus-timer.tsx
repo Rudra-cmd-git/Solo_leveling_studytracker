@@ -22,8 +22,8 @@ import { RANKS, breakKindForCycle, sessionXp } from "@/lib/game";
 import { elapsedClock } from "@/lib/dates";
 import type { SubjectData, SessionResult } from "@/lib/types";
 import { cn, focusLabel, formatNumber } from "@/lib/utils";
-import { playSystemSound } from "@/lib/sound";
 import { RewardOverlay, type RewardState } from "./reward-overlay";
+import { useSfx } from "./sound-provider";
 import { SystemPanel } from "./system-panel";
 import { SystemToast, type ToastState } from "./system-toast";
 
@@ -35,15 +35,14 @@ interface FocusTimerProps {
   subjects: SubjectData[];
   defaultMinutes: number;
   todayKey: string;
-  soundEnabled: boolean;
 }
 
 export function FocusTimer({
   subjects,
   defaultMinutes,
   todayKey,
-  soundEnabled,
 }: FocusTimerProps) {
+  const { play, playSequence } = useSfx();
   const initialDuration = PRESETS.includes(defaultMinutes)
     ? defaultMinutes
     : 25;
@@ -73,6 +72,7 @@ export function FocusTimer({
   const autoSavingRef = useRef(false);
   const finishWorkRef = useRef<() => void>(() => {});
   const finishBreakRef = useRef<() => void>(() => {});
+  const lastHeartbeatRef = useRef<number | null>(null);
   const router = useRouter();
 
   const totalSeconds = duration * 60;
@@ -96,6 +96,7 @@ export function FocusTimer({
 
   function start() {
     if (subjectId === 0) {
+      play("ui.error");
       setToast({
         title: "System warning",
         message: "Create a subject before entering the focus gate.",
@@ -106,11 +107,12 @@ export function FocusTimer({
 
     const seconds = remaining > 0 ? remaining : totalSeconds;
     workDoneRef.current = false;
+    lastHeartbeatRef.current = null;
     setRemaining(seconds);
     endAtRef.current = Date.now() + seconds * 1000;
     setBurstKey((value) => value + 1);
     setPhase("running");
-    if (soundEnabled) playSystemSound("timer-start");
+    play("timer.start");
   }
 
   function pause() {
@@ -122,19 +124,21 @@ export function FocusTimer({
     endAtRef.current = null;
     setRemaining(nextRemaining);
     setPhase("paused");
-    if (soundEnabled) playSystemSound("timer-pause");
+    play("timer.pause");
   }
 
   function resume() {
     workDoneRef.current = false;
+    lastHeartbeatRef.current = null;
     endAtRef.current = Date.now() + remaining * 1000;
     setPhase("running");
-    if (soundEnabled) playSystemSound("timer-resume");
+    play("timer.start", { volume: 0.7 });
   }
 
   function reset() {
     endAtRef.current = null;
     workDoneRef.current = false;
+    lastHeartbeatRef.current = null;
     setPhase("idle");
     setRemaining(totalSeconds);
     setElapsedSeconds(0);
@@ -142,6 +146,7 @@ export function FocusTimer({
     setBreakTotal(0);
     setCompletedCycles(0);
     setBreakLong(false);
+    play("timer.pause", { volume: 0.5 });
   }
 
   function finishEarly() {
@@ -152,6 +157,7 @@ export function FocusTimer({
     const elapsed = totalSeconds - remainingNow;
 
     if (elapsed < 30) {
+      play("ui.error");
       setToast({
         title: "Session too short",
         message: "Focus for at least 30 seconds before recording a session.",
@@ -164,6 +170,7 @@ export function FocusTimer({
     workDoneRef.current = true;
     setRemaining(remainingNow);
     setElapsedSeconds(elapsed);
+    play("timer.pause");
 
     if (pomodoro) {
       autoSave(Math.max(1, Math.round(elapsed / 60)));
@@ -185,7 +192,7 @@ export function FocusTimer({
     setRemaining(minutes * 60);
     endAtRef.current = Date.now() + minutes * 60 * 1000;
     setPhase("break");
-    if (soundEnabled) playSystemSound("timer-break");
+    play("timer.complete", { volume: 0.8 });
   }
 
   function finishBreak() {
@@ -194,7 +201,7 @@ export function FocusTimer({
     setRemaining(totalSeconds);
     setElapsedSeconds(0);
     setPhase("idle");
-    if (soundEnabled) playSystemSound("timer-complete");
+    play("ui.confirm");
     setToast({
       title: "Break complete",
       message: "Recovery recorded. Return to the gate when ready.",
@@ -212,7 +219,10 @@ export function FocusTimer({
       beginBreak();
     } else {
       setPhase("review");
-      if (soundEnabled) playSystemSound("timer-complete");
+      playSequence([
+        { key: "timer.complete" },
+        { key: "reward.crystal", delayMs: 70 },
+      ]);
     }
   }
 
@@ -246,6 +256,19 @@ export function FocusTimer({
     return () => window.clearInterval(interval);
   }, [phase]);
 
+  useEffect(() => {
+    if (phase !== "running") {
+      lastHeartbeatRef.current = null;
+      return;
+    }
+    if (remaining > 10 || remaining <= 0) return;
+    if (![10, 5, 3, 2, 1].includes(remaining)) return;
+    if (lastHeartbeatRef.current === remaining) return;
+
+    lastHeartbeatRef.current = remaining;
+    play("timer.heartbeat", { volume: 0.55 });
+  }, [phase, remaining, play]);
+
   function autoSave(minutes: number) {
     if (autoSavingRef.current) return;
     autoSavingRef.current = true;
@@ -262,6 +285,7 @@ export function FocusTimer({
       autoSavingRef.current = false;
 
       if (!result.ok) {
+        play("ui.error");
         setToast({
           title: "System warning",
           message: result.error ?? "Could not save this session.",
@@ -287,6 +311,7 @@ export function FocusTimer({
           achievements: result.achievements,
         });
       } else {
+        play("ui.confirm");
         setToast({
           title: "Session recorded",
           message: `${minutes} minutes logged. +${formatNumber(result.xpEarned ?? sessionXp(minutes, focusRating))} XP`,
@@ -315,6 +340,7 @@ export function FocusTimer({
       });
 
       if (!result.ok) {
+        play("ui.error");
         setToast({
           title: "System warning",
           message: result.error ?? "Could not save this session.",
@@ -340,6 +366,7 @@ export function FocusTimer({
           achievements: result.achievements,
         });
       } else {
+        play("ui.confirm");
         setToast({
           title: "Session recorded",
           message: `${logMinutes} minutes logged. +${formatNumber(result.xpEarned ?? estimatedXp)} XP`,
@@ -547,6 +574,7 @@ export function FocusTimer({
                 <>
                   <button
                     type="button"
+                    data-sfx-silent
                     onClick={pause}
                     className="system-button"
                   >
@@ -554,6 +582,7 @@ export function FocusTimer({
                   </button>
                   <button
                     type="button"
+                    data-sfx-silent
                     onClick={finishEarly}
                     className="system-button system-button--ghost"
                   >
@@ -564,6 +593,7 @@ export function FocusTimer({
                 <>
                   <button
                     type="button"
+                    data-sfx-silent
                     onClick={resume}
                     className="system-button"
                   >
@@ -571,6 +601,7 @@ export function FocusTimer({
                   </button>
                   <button
                     type="button"
+                    data-sfx-silent
                     onClick={reset}
                     className="system-button system-button--ghost"
                   >
@@ -580,6 +611,7 @@ export function FocusTimer({
               ) : phase === "break" ? (
                 <button
                   type="button"
+                  data-sfx-silent
                   onClick={finishBreak}
                   className="system-button"
                 >
@@ -588,6 +620,7 @@ export function FocusTimer({
               ) : (
                 <button
                   type="button"
+                  data-sfx-silent
                   onClick={start}
                   className="system-button min-w-44"
                 >

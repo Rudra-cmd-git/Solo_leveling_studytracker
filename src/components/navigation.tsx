@@ -15,6 +15,7 @@ import {
 import type { ShellData } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { RankBadge } from "./rank-badge";
+import { SoundToggle } from "./sound-toggle";
 import { SystemSigil } from "./system-sigil";
 import { XpBar } from "./xp-bar";
 
@@ -94,6 +95,10 @@ export function SideNavigation({ shell }: { shell: ShellData }) {
         <span className="ml-auto font-mono text-[0.58rem] text-muted">v1.0</span>
       </div>
 
+      <div className="mt-3 px-2">
+        <SoundToggle />
+      </div>
+
       <nav className="mt-4 flex flex-col gap-1" aria-label="Main navigation">
         {NAV_ITEMS.map((item) => {
           const active = isActive(pathname, item.href);
@@ -171,6 +176,7 @@ export function MobileTopBar({ shell }: { shell: ShellData }) {
             {shell.name} · Lv. {shell.progress.level}
           </p>
         </div>
+        <SoundToggle compact />
         <div
           className="flex h-8 min-w-8 items-center justify-center border border-[rgba(84,221,255,0.28)] bg-[rgba(59,158,255,0.12)] px-2 font-display text-sm font-bold"
           style={{ color: shell.progress.rank.color }}

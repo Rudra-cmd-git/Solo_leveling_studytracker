@@ -5,9 +5,10 @@ import { AnimatePresence, motion } from "motion/react";
 import { Sparkles, X } from "lucide-react";
 import type { AchievementAward, RankInfo } from "@/lib/types";
 import { fireRewardConfetti } from "@/lib/confetti";
-import { playSystemSound } from "@/lib/sound";
+import { SFX_COMBOS } from "@/lib/sfx";
 import { formatNumber } from "@/lib/utils";
 import { CountUp } from "./motion/count-up";
+import { useSfx } from "./sound-provider";
 
 export interface RewardState {
   xp: number;
@@ -27,6 +28,8 @@ export function RewardOverlay({
   reward: RewardState | null;
   onClose: () => void;
 }) {
+  const { play, playSequence } = useSfx();
+
   useEffect(() => {
     if (!reward) return;
     const handler = (event: KeyboardEvent) => {
@@ -39,17 +42,28 @@ export function RewardOverlay({
   useEffect(() => {
     if (!reward) return;
     void fireRewardConfetti({ rankedUp: Boolean(reward.rankedUp) });
+  }, [reward]);
+
+  useEffect(() => {
+    if (!reward) return;
 
     if (reward.rankedUp) {
-      playSystemSound("rank-up");
+      const combo = SFX_COMBOS.find((entry) => entry.id === "rank-up");
+      if (combo) playSequence(combo.cues);
     } else if (reward.leveledUp) {
-      playSystemSound("level-up");
-    } else if (reward.achievements && reward.achievements.length > 0) {
-      playSystemSound("achievement");
-    } else {
-      playSystemSound("quest-complete");
+      const combo = SFX_COMBOS.find((entry) => entry.id === "level-up");
+      if (combo) playSequence(combo.cues);
+    } else if (reward.achievements?.length) {
+      play("reward.achievement");
     }
-  }, [reward]);
+
+    if (
+      (reward.rankedUp || reward.leveledUp) &&
+      reward.achievements?.length
+    ) {
+      play("reward.achievement", { delayMs: 900 });
+    }
+  }, [reward, play, playSequence]);
 
   const heading = reward?.rankedUp
     ? "RANK UP"

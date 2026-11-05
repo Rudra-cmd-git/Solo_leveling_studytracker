@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Save, Volume2, VolumeX, Zap, Play } from "lucide-react";
+import { ArrowUpRight, AudioLines, Play, Save, Volume2, VolumeX, Zap } from "lucide-react";
 import { updateSettings } from "@/app/actions";
-import { playSystemSound, setGlobalSoundEnabled } from "@/lib/sound";
 import type { SettingsData } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useSfx } from "./sound-provider";
 import { SystemPanel } from "./system-panel";
 import { SystemToast, type ToastState } from "./system-toast";
 
@@ -42,6 +43,7 @@ export function ProfileSettings({
     settings.xpBonusesEnabled,
   );
   const [toast, setToast] = useState<ToastState | null>(null);
+  const { play, stopAmbience } = useSfx();
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -60,6 +62,7 @@ export function ProfileSettings({
       });
 
       if (!result.ok) {
+        play("ui.error");
         setToast({
           title: "System warning",
           message: result.error ?? "Could not update settings.",
@@ -68,6 +71,11 @@ export function ProfileSettings({
         return;
       }
 
+      if (soundEnabled) {
+        play("ui.confirm", { force: true });
+      } else {
+        stopAmbience();
+      }
       router.refresh();
       setToast({
         title: "Settings updated",
@@ -169,14 +177,13 @@ export function ProfileSettings({
             <button
               type="button"
               onClick={() => {
-                setSoundEnabled((value) => {
-                  const next = !value;
-                  setGlobalSoundEnabled(next);
-                  if (next) {
-                    playSystemSound("quest-complete", { force: true });
-                  }
-                  return next;
-                });
+                const next = !soundEnabled;
+                setSoundEnabled(next);
+                if (next) {
+                  play("ui.confirm", { force: true });
+                } else {
+                  stopAmbience();
+                }
               }}
               className={cn(
                 "flex w-full items-center justify-between border px-3 py-2.5 text-left transition-colors",
@@ -194,10 +201,10 @@ export function ProfileSettings({
                 )}
                 <span>
                   <span className="block text-xs font-semibold text-ice">
-                    System audio
+                    Dungeon audio
                   </span>
                   <span className="mt-0.5 block text-[0.62rem] text-muted">
-                    Sound effects for quests, level-ups, rank-ups, and timer
+                    Interface cues, focus timer, rewards, and ambience
                   </span>
                 </span>
               </span>
@@ -225,17 +232,18 @@ export function ProfileSettings({
                 <span className="text-[0.62rem] uppercase tracking-wider text-muted">Preview:</span>
                 {(
                   [
-                    { label: "Quest", type: "quest-complete" },
-                    { label: "Level up", type: "level-up" },
-                    { label: "Rank up", type: "rank-up" },
-                    { label: "Chime", type: "timer-complete" },
+                    { label: "Quest", key: "quest.complete" },
+                    { label: "Level up", key: "reward.levelUp" },
+                    { label: "Rank up", key: "reward.impact" },
+                    { label: "Chime", key: "timer.complete" },
                   ] as const
                 ).map((s) => (
                   <button
-                    key={s.type}
+                    key={s.key}
                     type="button"
-                    onClick={() => playSystemSound(s.type, { force: true })}
-                    className="inline-flex items-center gap-1 border border-[rgba(84,221,255,0.2)] bg-[rgba(59,158,255,0.08)] px-2 py-0.5 text-ice hover:border-glow hover:text-glow transition-colors"
+                    data-sfx-silent
+                    onClick={() => play(s.key, { force: true })}
+                    className="inline-flex items-center gap-1 border border-[rgba(84,221,255,0.2)] bg-[rgba(59,158,255,0.08)] px-2 py-0.5 text-ice transition-colors hover:border-glow hover:text-glow"
                   >
                     <Play className="h-2.5 w-2.5 fill-current" /> {s.label}
                   </button>
@@ -243,6 +251,24 @@ export function ProfileSettings({
               </div>
             ) : null}
           </div>
+
+          <Link
+            href="/sound-lab"
+            className="flex w-full items-center justify-between border border-[rgba(84,221,255,0.12)] bg-[rgba(3,10,20,0.4)] px-3 py-2.5 text-left transition-colors hover:border-[rgba(84,221,255,0.32)] hover:bg-[rgba(59,158,255,0.06)]"
+          >
+            <span className="flex items-center gap-2.5">
+              <AudioLines className="h-4 w-4 text-glow/70" />
+              <span>
+                <span className="block text-xs font-semibold text-ice">
+                  Sound lab
+                </span>
+                <span className="mt-0.5 block text-[0.62rem] text-muted">
+                  Audition dungeon cues and ambience beds
+                </span>
+              </span>
+            </span>
+            <ArrowUpRight className="h-3.5 w-3.5 text-muted" />
+          </Link>
 
           <button
             type="button"
