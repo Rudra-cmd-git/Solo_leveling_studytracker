@@ -22,6 +22,7 @@ import { RANKS, breakKindForCycle, sessionXp } from "@/lib/game";
 import { elapsedClock } from "@/lib/dates";
 import type { SubjectData, SessionResult } from "@/lib/types";
 import { cn, focusLabel, formatNumber } from "@/lib/utils";
+import { playSystemSound } from "@/lib/sound";
 import { RewardOverlay, type RewardState } from "./reward-overlay";
 import { SystemPanel } from "./system-panel";
 import { SystemToast, type ToastState } from "./system-toast";
@@ -109,6 +110,7 @@ export function FocusTimer({
     endAtRef.current = Date.now() + seconds * 1000;
     setBurstKey((value) => value + 1);
     setPhase("running");
+    if (soundEnabled) playSystemSound("timer-start");
   }
 
   function pause() {
@@ -120,12 +122,14 @@ export function FocusTimer({
     endAtRef.current = null;
     setRemaining(nextRemaining);
     setPhase("paused");
+    if (soundEnabled) playSystemSound("timer-pause");
   }
 
   function resume() {
     workDoneRef.current = false;
     endAtRef.current = Date.now() + remaining * 1000;
     setPhase("running");
+    if (soundEnabled) playSystemSound("timer-resume");
   }
 
   function reset() {
@@ -181,7 +185,7 @@ export function FocusTimer({
     setRemaining(minutes * 60);
     endAtRef.current = Date.now() + minutes * 60 * 1000;
     setPhase("break");
-    if (soundEnabled) playSystemChime();
+    if (soundEnabled) playSystemSound("timer-break");
   }
 
   function finishBreak() {
@@ -190,7 +194,7 @@ export function FocusTimer({
     setRemaining(totalSeconds);
     setElapsedSeconds(0);
     setPhase("idle");
-    if (soundEnabled) playSystemChime();
+    if (soundEnabled) playSystemSound("timer-complete");
     setToast({
       title: "Break complete",
       message: "Recovery recorded. Return to the gate when ready.",
@@ -208,7 +212,7 @@ export function FocusTimer({
       beginBreak();
     } else {
       setPhase("review");
-      if (soundEnabled) playSystemChime();
+      if (soundEnabled) playSystemSound("timer-complete");
     }
   }
 
@@ -935,32 +939,4 @@ function BreakField({
       />
     </div>
   );
-}
-
-function playSystemChime() {
-  try {
-    const AudioContextClass = window.AudioContext;
-    const context = new AudioContextClass();
-    const now = context.currentTime;
-    const gain = context.createGain();
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(0.12, now + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.2);
-    gain.connect(context.destination);
-
-    [523.25, 783.99, 1046.5].forEach((frequency, index) => {
-      const oscillator = context.createOscillator();
-      oscillator.type = "sine";
-      oscillator.frequency.value = frequency;
-      oscillator.connect(gain);
-      oscillator.start(now + index * 0.12);
-      oscillator.stop(now + 1.2);
-    });
-
-    window.setTimeout(() => {
-      void context.close();
-    }, 1600);
-  } catch {
-    // Audio is optional; the visual system notification still fires.
-  }
 }

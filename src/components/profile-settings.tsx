@@ -2,8 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Save, Volume2, VolumeX, Zap } from "lucide-react";
+import { Save, Volume2, VolumeX, Zap, Play } from "lucide-react";
 import { updateSettings } from "@/app/actions";
+import { playSystemSound, setGlobalSoundEnabled } from "@/lib/sound";
 import type { SettingsData } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { SystemPanel } from "./system-panel";
@@ -164,50 +165,84 @@ export function ProfileSettings({
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setSoundEnabled((value) => !value)}
-            className={cn(
-              "flex w-full items-center justify-between border px-3 py-2.5 text-left transition-colors",
-              soundEnabled
-                ? "border-[rgba(84,221,255,0.36)] bg-[rgba(59,158,255,0.09)]"
-                : "border-[rgba(84,221,255,0.12)] bg-[rgba(3,10,20,0.4)]",
-            )}
-            aria-pressed={soundEnabled}
-          >
-            <span className="flex items-center gap-2.5">
-              {soundEnabled ? (
-                <Volume2 className="h-4 w-4 text-glow" />
-              ) : (
-                <VolumeX className="h-4 w-4 text-muted" />
+          <div className="space-y-1.5">
+            <button
+              type="button"
+              onClick={() => {
+                setSoundEnabled((value) => {
+                  const next = !value;
+                  setGlobalSoundEnabled(next);
+                  if (next) {
+                    playSystemSound("quest-complete", { force: true });
+                  }
+                  return next;
+                });
+              }}
+              className={cn(
+                "flex w-full items-center justify-between border px-3 py-2.5 text-left transition-colors",
+                soundEnabled
+                  ? "border-[rgba(84,221,255,0.36)] bg-[rgba(59,158,255,0.09)]"
+                  : "border-[rgba(84,221,255,0.12)] bg-[rgba(3,10,20,0.4)]",
               )}
-              <span>
-                <span className="block text-xs font-semibold text-ice">
-                  System chime
-                </span>
-                <span className="mt-0.5 block text-[0.62rem] text-muted">
-                  Play a tone when the focus timer ends
+              aria-pressed={soundEnabled}
+            >
+              <span className="flex items-center gap-2.5">
+                {soundEnabled ? (
+                  <Volume2 className="h-4 w-4 text-glow" />
+                ) : (
+                  <VolumeX className="h-4 w-4 text-muted" />
+                )}
+                <span>
+                  <span className="block text-xs font-semibold text-ice">
+                    System audio
+                  </span>
+                  <span className="mt-0.5 block text-[0.62rem] text-muted">
+                    Sound effects for quests, level-ups, rank-ups, and timer
+                  </span>
                 </span>
               </span>
-            </span>
-            <span
-              className={cn(
-                "relative h-5 w-9 border transition-colors",
-                soundEnabled
-                  ? "border-[rgba(84,221,255,0.5)] bg-[rgba(59,158,255,0.28)]"
-                  : "border-[rgba(84,221,255,0.18)] bg-[rgba(2,8,16,0.8)]",
-              )}
-            >
               <span
                 className={cn(
-                  "absolute top-0.5 h-3.5 w-3.5 transition-all",
+                  "relative h-5 w-9 border transition-colors",
                   soundEnabled
-                    ? "left-[18px] bg-glow shadow-[0_0_6px_#54ddff]"
-                    : "left-0.5 bg-muted",
+                    ? "border-[rgba(84,221,255,0.5)] bg-[rgba(59,158,255,0.28)]"
+                    : "border-[rgba(84,221,255,0.18)] bg-[rgba(2,8,16,0.8)]",
                 )}
-              />
-            </span>
-          </button>
+              >
+                <span
+                  className={cn(
+                    "absolute top-0.5 h-3.5 w-3.5 transition-all",
+                    soundEnabled
+                      ? "left-[18px] bg-glow shadow-[0_0_6px_#54ddff]"
+                      : "left-0.5 bg-muted",
+                  )}
+                />
+              </span>
+            </button>
+
+            {soundEnabled ? (
+              <div className="flex flex-wrap items-center gap-1.5 px-1 py-1 text-[0.68rem] text-muted">
+                <span className="text-[0.62rem] uppercase tracking-wider text-muted">Preview:</span>
+                {(
+                  [
+                    { label: "Quest", type: "quest-complete" },
+                    { label: "Level up", type: "level-up" },
+                    { label: "Rank up", type: "rank-up" },
+                    { label: "Chime", type: "timer-complete" },
+                  ] as const
+                ).map((s) => (
+                  <button
+                    key={s.type}
+                    type="button"
+                    onClick={() => playSystemSound(s.type, { force: true })}
+                    className="inline-flex items-center gap-1 border border-[rgba(84,221,255,0.2)] bg-[rgba(59,158,255,0.08)] px-2 py-0.5 text-ice hover:border-glow hover:text-glow transition-colors"
+                  >
+                    <Play className="h-2.5 w-2.5 fill-current" /> {s.label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
 
           <button
             type="button"

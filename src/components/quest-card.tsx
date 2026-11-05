@@ -7,6 +7,7 @@ import { Check, Lock, Sparkles } from "lucide-react";
 import { claimQuest } from "@/app/actions";
 import { RANKS } from "@/lib/game";
 import { fireQuestConfetti } from "@/lib/confetti";
+import { playSystemSound } from "@/lib/sound";
 import type { QuestView } from "@/lib/types";
 import { cn, formatNumber, progressUnit } from "@/lib/utils";
 import { AnimatedBar } from "./motion/animated-bar";
@@ -51,6 +52,7 @@ export function QuestCard({ quest }: { quest: QuestView }) {
         });
       } else {
         void fireQuestConfetti();
+        playSystemSound("quest-complete");
         setToast({
           title: "Quest complete",
           message: `${quest.title} cleared. +${formatNumber(result.xpReward ?? quest.xpReward)} XP`,

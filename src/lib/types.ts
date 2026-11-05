@@ -178,6 +178,7 @@ export interface ShellData {
   name: string;
   progress: ProgressInfo;
   onboarded: boolean;
+  soundEnabled?: boolean;
 }
 
 export interface ActionResult {

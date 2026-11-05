@@ -440,6 +440,7 @@ export const getShellData = cache(async (): Promise<ShellData> => {
     name: player.name,
     progress: progressFromXp(player.totalXp),
     onboarded: appSettings.onboarded,
+    soundEnabled: appSettings.soundEnabled,
   };
 });
 

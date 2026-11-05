@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { Sparkles, X } from "lucide-react";
 import type { AchievementAward, RankInfo } from "@/lib/types";
 import { fireRewardConfetti } from "@/lib/confetti";
+import { playSystemSound } from "@/lib/sound";
 import { formatNumber } from "@/lib/utils";
 import { CountUp } from "./motion/count-up";
 
@@ -38,6 +39,16 @@ export function RewardOverlay({
   useEffect(() => {
     if (!reward) return;
     void fireRewardConfetti({ rankedUp: Boolean(reward.rankedUp) });
+
+    if (reward.rankedUp) {
+      playSystemSound("rank-up");
+    } else if (reward.leveledUp) {
+      playSystemSound("level-up");
+    } else if (reward.achievements && reward.achievements.length > 0) {
+      playSystemSound("achievement");
+    } else {
+      playSystemSound("quest-complete");
+    }
   }, [reward]);
 
   const heading = reward?.rankedUp
