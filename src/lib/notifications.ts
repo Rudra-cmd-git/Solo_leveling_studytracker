@@ -53,7 +53,6 @@ export function showDailyReminderNotification(): void {
     body: "Time to enter the focus gate. A focused session is the only way to gain XP.",
     icon: "/icon.svg",
     tag: "daily-reminder",
-    renotify: false,
   });
 }
 

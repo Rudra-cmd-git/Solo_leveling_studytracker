@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from "react";
-import { Bell, BellOff, Clock } from "lucide-react";
+import { Bell, BellOff, Save } from "lucide-react";
 import { updateNotificationSettings } from "@/app/actions";
 import { requestNotificationPermission } from "@/lib/notifications";
 
@@ -14,6 +14,8 @@ export function NotificationSettings({
   enabled: initialEnabled,
   reminderTime: initialReminderTime,
 }: NotificationSettingsProps) {
+  const [enabled, setEnabled] = useState(initialEnabled);
+  const [reminderTime, setReminderTime] = useState(initialReminderTime);
   const [notifPending, startNotifTransition] = useTransition();
   const [notifToast, setNotifToast] = useState<{
     title: string;
@@ -23,9 +25,7 @@ export function NotificationSettings({
 
   async function handleNotificationSettings(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const enabled = formData.get("notificationsEnabled") === "on";
-    const reminderTime = String(formData.get("reminderTime") ?? "");
+    if (notifPending) return;
 
     startNotifTransition(async () => {
       const result = await updateNotificationSettings({
@@ -72,13 +72,15 @@ export function NotificationSettings({
       <div className="flex items-center gap-2">
         <input
           id="notificationsEnabled"
+          name="notificationsEnabled"
           type="checkbox"
-          defaultChecked={initialEnabled}
+          checked={enabled}
+          onChange={(event) => setEnabled(event.target.checked)}
           className="system-input w-4 h-4"
         />
         <label htmlFor="notificationsEnabled" className="flex items-center gap-1.5 cursor-pointer select-none">
           <div className="flex items-center gap-2">
-            {initialEnabled ? (
+            {enabled ? (
               <Bell className="h-4 w-4 text-mint" />
             ) : (
               <BellOff className="h-4 w-4 text-muted" />
@@ -88,27 +90,21 @@ export function NotificationSettings({
         </label>
       </div>
 
-      {initialEnabled ? (
+      {enabled ? (
         <>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <p className="hud-label">Reminder time</p>
+              <label htmlFor="reminderTime" className="hud-label">
+                Reminder time
+              </label>
               <input
+                id="reminderTime"
                 type="time"
                 name="reminderTime"
-                defaultValue={initialReminderTime}
+                value={reminderTime}
+                onChange={(event) => setReminderTime(event.target.value)}
                 className="system-input"
               />
-            </div>
-            <div className="flex items-end gap-2">
-              <button
-                type="button"
-                disabled={notifPending}
-                onClick={() => {}}
-                className="system-button system-button--small"
-              >
-                <Clock className="h-3.5 w-3.5" /> Enable alerts
-              </button>
             </div>
           </div>
           <p className="text-[0.62rem] text-muted">
@@ -128,7 +124,15 @@ export function NotificationSettings({
           {notifToast.title}: {notifToast.message}
         </div>
       )}
+
+      <button
+        type="submit"
+        disabled={notifPending}
+        className="system-button system-button--small"
+      >
+        <Save className="h-3.5 w-3.5" />
+        {notifPending ? "Saving..." : "Save alerts"}
+      </button>
     </form>
   );
 }
-

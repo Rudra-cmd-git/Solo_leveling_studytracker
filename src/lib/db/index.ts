@@ -245,6 +245,8 @@ const SCHEMA_STATEMENTS = [
     timezone TEXT NOT NULL DEFAULT 'Asia/Kolkata',
     sound_enabled INTEGER NOT NULL DEFAULT 1,
     xp_bonuses_enabled INTEGER NOT NULL DEFAULT 0,
+    notifications_enabled INTEGER NOT NULL DEFAULT 0,
+    reminder_time TEXT NOT NULL DEFAULT '18:00',
     onboarded INTEGER NOT NULL DEFAULT 0
   )`,
   `CREATE TABLE IF NOT EXISTS subjects (
@@ -317,6 +319,8 @@ const SCHEMA_STATEMENTS = [
 
 const MIGRATION_STATEMENTS = [
   "ALTER TABLE settings ADD COLUMN xp_bonuses_enabled INTEGER NOT NULL DEFAULT 0",
+  "ALTER TABLE settings ADD COLUMN notifications_enabled INTEGER NOT NULL DEFAULT 0",
+  "ALTER TABLE settings ADD COLUMN reminder_time TEXT NOT NULL DEFAULT '18:00'",
   "ALTER TABLE quests ADD COLUMN subject_id INTEGER REFERENCES subjects(id)",
 ];
 
