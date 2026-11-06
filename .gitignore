@@ -43,3 +43,6 @@ next-env.d.ts
 
 # local game data
 /data/
+
+# local nvm artifact
+/Author Software/

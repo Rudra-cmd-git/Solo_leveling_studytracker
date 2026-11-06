@@ -133,6 +133,8 @@ export interface SettingsData {
   timezone: string;
   soundEnabled: boolean;
   xpBonusesEnabled: boolean;
+  notificationsEnabled: boolean;
+  reminderTime: string;
   onboarded: boolean;
 }
 
@@ -226,6 +228,8 @@ export interface SettingsInput {
   timezone: string;
   soundEnabled: boolean;
   xpBonusesEnabled?: boolean;
+  notificationsEnabled?: boolean;
+  reminderTime?: string;
 }
 
 export interface OnboardingInput {

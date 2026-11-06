@@ -23,6 +23,10 @@ export const settings = sqliteTable("settings", {
   xpBonusesEnabled: integer("xp_bonuses_enabled", { mode: "boolean" })
     .notNull()
     .default(false),
+  notificationsEnabled: integer("notifications_enabled", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  reminderTime: text("reminder_time").notNull().default("18:00"),
   onboarded: integer("onboarded", { mode: "boolean" })
     .notNull()
     .default(false),

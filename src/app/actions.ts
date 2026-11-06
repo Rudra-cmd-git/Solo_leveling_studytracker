@@ -722,3 +722,33 @@ export async function resetProgress(): Promise<ActionResult> {
   revalidateAll();
   return { ok: true };
 }
+
+
+export async function updateNotificationSettings(
+  input: {
+    notificationsEnabled?: boolean;
+    reminderTime?: string;
+  },
+): Promise<ActionResult> {
+  await ensureDatabase();
+
+  const updates: Record<string, unknown> = {};
+  if (input.notificationsEnabled !== undefined) {
+    updates.notificationsEnabled = input.notificationsEnabled;
+  }
+  if (input.reminderTime !== undefined) {
+    updates.reminderTime = input.reminderTime;
+  }
+
+  if (Object.keys(updates).length === 0) {
+    return { ok: false, error: "No settings to update." };
+  }
+
+  await db
+    .update(settings)
+    .set(updates)
+    .where(eq(settings.id, 1));
+
+  revalidateAll();
+  return { ok: true };
+}

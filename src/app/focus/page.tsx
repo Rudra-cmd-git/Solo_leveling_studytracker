@@ -1,7 +1,9 @@
 import Link from "next/link";
-import { CircleCheck, Flame, Shield, Sparkles } from "lucide-react";
+import { AlertTriangle, CircleCheck, Flame, Shield, Sparkles } from "lucide-react";
 import { FocusTimer } from "@/components/focus-timer";
 import { AnimatedBar } from "@/components/motion/animated-bar";
+import { StreakAlert } from "@/components/streak-alert";
+import { GoalRing } from "@/components/motion/goal-ring";
 import { PageHeader } from "@/components/page-header";
 import { SystemPanel } from "@/components/system-panel";
 import { getAppData } from "@/lib/data";
@@ -20,6 +22,25 @@ export default async function FocusPage() {
         description="A focused session is the only way to gain XP. Select your target, enter the gate, and do not leave until the System records your effort."
       />
 
+      {data.streak.atRisk && (
+        <div className="border border-[rgba(255,84,104,0.4)] bg-[rgba(255,84,104,0.08)] p-4 rounded flex items-start gap-3">
+          <AlertTriangle className="mt-0.5 h-5 w-5 text-[#ff8296] shrink-0" />
+          <div>
+            <p className="font-semibold text-[#ffb1bd] text-[0.66rem] uppercase tracking-[0.1em]">
+              Streak at risk
+            </p>
+            <p className="mt-1 text-[0.62rem] text-muted leading-snug">
+              Your {data.streak.current}-day streak will break if you don&apos;t log a session today. Enter the focus gate to keep it alive.
+            </p>
+          </div>
+        </div>
+      )}
+      <StreakAlert
+        atRisk={data.streak.atRisk}
+        current={data.streak.current}
+        notificationsEnabled={data.settings.notificationsEnabled}
+      />
+
       <div className="grid gap-5 xl:grid-cols-[1.35fr_0.65fr]">
         <FocusTimer
           subjects={data.subjects}
@@ -28,6 +49,29 @@ export default async function FocusPage() {
         />
 
         <div className="space-y-5">
+          <SystemPanel label="Daily goal" className="boot-in boot-in-delay-1">
+            <div className="space-y-4">
+              <GoalRing
+                minutes={data.totals.todayMinutes}
+                goal={data.settings.dailyGoalMinutes}
+                percent={
+                  data.settings.dailyGoalMinutes > 0
+                    ? Math.min(100, (data.totals.todayMinutes / data.settings.dailyGoalMinutes) * 100)
+                    : 0
+                }
+              />
+              {data.totals.todayMinutes >= data.settings.dailyGoalMinutes ? (
+                <p className="mt-2 text-[0.6rem] tracking-[0.1em] text-mint font-semibold uppercase">
+                  Goal reached
+                </p>
+              ) : (
+                <p className="mt-2 text-[0.6rem] tracking-[0.1em] text-muted uppercase">
+                  {data.settings.dailyGoalMinutes - data.totals.todayMinutes}m remaining
+                </p>
+              )}
+            </div>
+          </SystemPanel>
+
           <SystemPanel label="Current objectives" className="boot-in-delay-1 boot-in">
             <div className="space-y-4">
               {data.dailyQuests.map((quest) => (

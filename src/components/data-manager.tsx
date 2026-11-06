@@ -110,6 +110,13 @@ export function DataManager() {
           >
             <Download className="h-3.5 w-3.5" /> Export backup
           </a>
+          <a
+            href="/api/export/csv"
+            className="system-button system-button--small justify-center"
+            download
+          >
+            <Download className="h-3.5 w-3.5" /> Export CSV
+          </a>
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
