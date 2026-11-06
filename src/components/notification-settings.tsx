@@ -14,7 +14,7 @@ export function NotificationSettings({
   enabled: initialEnabled,
   reminderTime: initialReminderTime,
 }: NotificationSettingsProps) {
-  const [notifPending, startNotifTransition] = useTransition(false);
+  const [notifPending, startNotifTransition] = useTransition();
   const [notifToast, setNotifToast] = useState<{
     title: string;
     message: string;

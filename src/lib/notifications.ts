@@ -42,7 +42,6 @@ export function showStreakAtRiskNotification(streak: number): void {
     body: streak + "-day study streak is about to break. Log a session to keep it alive, Hunter.",
     icon: "/icon.svg",
     tag: "streak-at-risk",
-    renotify: false,
   });
 }
 

@@ -71,6 +71,8 @@ async function getSettingsRow(): Promise<SettingsData> {
     timezone: row.timezone,
     soundEnabled: row.soundEnabled,
     xpBonusesEnabled: row.xpBonusesEnabled,
+    notificationsEnabled: row.notificationsEnabled,
+    reminderTime: row.reminderTime,
     onboarded: row.onboarded,
   };
 }
