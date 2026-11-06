@@ -1547,6 +1547,18 @@ html {
   }
 }
 
+@keyframes rank-aura-dim {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.08;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 0.16;
+  }
+}
+
 @keyframes rank-rift-spin {
   to {
     transform: rotate(360deg);
@@ -1559,8 +1571,7 @@ html[data-theme="E"] body::after {
 }
 
 html[data-theme="E"] .battlefield-atmosphere::before {
-  opacity: 0.16;
-  animation-duration: 28s;
+  animation: rank-aura-dim 28s ease-in-out infinite;
 }
 
 html[data-theme="E"] .system-panel {
