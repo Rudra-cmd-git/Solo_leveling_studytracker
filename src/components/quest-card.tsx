@@ -87,9 +87,13 @@ export function QuestCard({ quest }: { quest: QuestView }) {
                 <span
                   className="border px-1.5 py-0.5 text-[0.52rem] font-semibold tracking-[0.08em] uppercase"
                   style={{
-                    color: quest.subjectColor ?? "#54ddff",
-                    borderColor: `${quest.subjectColor ?? "#54ddff"}55`,
-                    backgroundColor: `${quest.subjectColor ?? "#54ddff"}12`,
+                    color: quest.subjectColor ?? "var(--accent)",
+                    borderColor: quest.subjectColor
+                      ? `${quest.subjectColor}55`
+                      : "var(--accent-a045)",
+                    backgroundColor: quest.subjectColor
+                      ? `${quest.subjectColor}12`
+                      : "var(--accent-a01)",
                   }}
                 >
                   {quest.subjectName}
@@ -113,7 +117,7 @@ export function QuestCard({ quest }: { quest: QuestView }) {
               {quest.description}
             </p>
           </div>
-          <div className="flex shrink-0 items-center gap-1 border border-[rgba(255,191,90,0.2)] bg-[rgba(255,191,90,0.05)] px-2 py-1 font-mono text-[0.62rem] text-gold">
+          <div className="flex shrink-0 items-center gap-1 border border-[rgb(var(--gold-rgb)/0.2)] bg-[rgb(var(--gold-rgb)/0.05)] px-2 py-1 font-mono text-[0.62rem] text-gold">
             <Sparkles className="h-3 w-3" />
             {quest.xpReward}
           </div>
@@ -133,7 +137,8 @@ export function QuestCard({ quest }: { quest: QuestView }) {
             <AnimatedBar
               className={cn(
                 "stat-fill",
-                quest.complete && "bg-gradient-to-r from-[#1f9b74] to-[#54ffd0]",
+                quest.complete &&
+                  "bg-gradient-to-r from-[rgb(var(--mint-rgb)/0.55)] to-[var(--mint)]",
               )}
               percent={quest.percent}
             />
@@ -150,9 +155,9 @@ export function QuestCard({ quest }: { quest: QuestView }) {
             quest.complete && !quest.claimed && !isPending
               ? {
                   boxShadow: [
-                    "0 0 0 rgba(61,214,163,0)",
-                    "0 0 22px rgba(61,214,163,0.45)",
-                    "0 0 0 rgba(61,214,163,0)",
+                    "0 0 0 rgb(var(--mint-rgb)/0)",
+                    "0 0 22px rgb(var(--mint-rgb)/0.45)",
+                    "0 0 0 rgb(var(--mint-rgb)/0)",
                   ],
                 }
               : undefined

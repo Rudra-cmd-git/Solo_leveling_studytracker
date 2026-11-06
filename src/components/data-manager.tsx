@@ -136,10 +136,10 @@ export function DataManager() {
           />
         </div>
 
-        <div className="mt-4 border border-[rgba(255,84,104,0.2)] bg-[rgba(255,84,104,0.04)] p-3">
+        <div className="mt-4 border border-[rgb(var(--danger-rgb)/0.2)] bg-[rgb(var(--danger-rgb)/0.04)] p-3">
           <div className="flex items-center gap-1.5">
-            <ShieldAlert className="h-3.5 w-3.5 text-[#ff8296]" />
-            <p className="hud-label text-[#ffb1bd]">Danger zone</p>
+            <ShieldAlert className="h-3.5 w-3.5 text-danger" />
+            <p className="hud-label text-danger">Danger zone</p>
           </div>
           <p className="mt-1.5 text-[0.65rem] leading-relaxed text-muted">
             Reset progress erases sessions, quest rewards, achievements, and XP.
@@ -150,8 +150,8 @@ export function DataManager() {
             onClick={reset}
             disabled={isPending}
             className={cn(
-              "mt-3 inline-flex h-8 items-center gap-1.5 border border-[rgba(255,84,104,0.35)] bg-[rgba(255,84,104,0.08)] px-3 text-[0.62rem] font-semibold tracking-[0.12em] text-[#ffb1bd] uppercase transition-colors",
-              "hover:border-[rgba(255,84,104,0.6)] hover:bg-[rgba(255,84,104,0.14)] disabled:opacity-50",
+              "mt-3 inline-flex h-8 items-center gap-1.5 border border-[rgb(var(--danger-rgb)/0.35)] bg-[rgb(var(--danger-rgb)/0.08)] px-3 text-[0.62rem] font-semibold tracking-[0.12em] text-danger uppercase transition-colors",
+              "hover:border-[rgb(var(--danger-rgb)/0.6)] hover:bg-[rgb(var(--danger-rgb)/0.14)] disabled:opacity-50",
             )}
           >
             <RotateCcw className="h-3.5 w-3.5" />

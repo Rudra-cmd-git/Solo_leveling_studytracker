@@ -17,8 +17,8 @@ export function StatsGrid({
           className={cn(
             "group",
             compact
-              ? "border-l border-[rgba(84,221,255,0.1)] px-2 first:border-l-0 sm:px-3"
-              : "border border-[rgba(84,221,255,0.12)] bg-[rgba(3,10,20,0.4)] p-3",
+              ? "border-l border-[var(--accent-a01)] px-2 first:border-l-0 sm:px-3"
+              : "border border-[var(--accent-a012)] bg-[var(--panel-a04)] p-3",
           )}
         >
           <div className="flex items-baseline justify-between gap-2">

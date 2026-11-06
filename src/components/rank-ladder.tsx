@@ -33,16 +33,16 @@ export function RankLadder({ progress }: { progress: ProgressInfo }) {
                 className={cn(
                   "rank-step flex min-w-0 flex-1 flex-col items-center border px-1 py-2 text-center transition-colors",
                   isCurrent
-                    ? "border-[rgba(84,221,255,0.45)] bg-[rgba(59,158,255,0.12)]"
+                    ? "border-[var(--accent-a045)] bg-[var(--accent2-a012)]"
                     : isPassed
-                      ? "border-[rgba(84,221,255,0.12)] bg-[rgba(59,158,255,0.04)]"
-                      : "border-[rgba(84,221,255,0.07)] bg-[rgba(2,8,16,0.4)]",
+                      ? "border-[var(--accent-a012)] bg-[var(--accent2-a004)]"
+                      : "border-[var(--accent-a007)] bg-[var(--void-a04)]",
                 )}
               >
                 <span
                   className="font-display text-lg font-bold"
                   style={{
-                    color: isCurrent ? rank.color : isPassed ? `${rank.color}aa` : "#3c556d",
+                    color: isCurrent ? rank.color : isPassed ? `${rank.color}aa` : "var(--text-muted)",
                     textShadow: isCurrent ? `0 0 10px ${rank.color}` : "none",
                   }}
                 >

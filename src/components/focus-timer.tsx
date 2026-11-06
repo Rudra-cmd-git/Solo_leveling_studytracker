@@ -383,7 +383,7 @@ export function FocusTimer({
         ? 1
         : ((completedCycles - 1) % cyclesBeforeLongBreak) + 1
       : 0;
-  const ringColor = phase === "break" ? "#3dd6a3" : "#54ddff";
+  const ringColor = phase === "break" ? "var(--mint)" : "var(--accent)";
   const isActive = phase === "running" || phase === "break";
   const isCritical = phase === "running" && remaining <= 10 && remaining > 0;
 
@@ -409,7 +409,7 @@ export function FocusTimer({
               className={cn(
                 "h-1.5 w-1.5 rounded-full",
                 phase === "running" || phase === "break"
-                  ? "bg-mint shadow-[0_0_7px_#3dd6a3]"
+                  ? "bg-mint shadow-[0_0_7px_var(--mint)]"
                   : "bg-muted",
               )}
             />
@@ -434,7 +434,7 @@ export function FocusTimer({
                 style={{
                   background:
                     phase === "break"
-                      ? "radial-gradient(circle, rgba(61,214,163,0.2), rgba(61,214,163,0.05) 48%, transparent 72%)"
+                      ? "radial-gradient(circle, rgb(var(--mint-rgb) / 0.2), rgb(var(--mint-rgb) / 0.05) 48%, transparent 72%)"
                       : undefined,
                 }}
                 animate={
@@ -491,7 +491,7 @@ export function FocusTimer({
                   cy="160"
                   r="138"
                   fill="none"
-                  stroke="rgba(59,158,255,0.08)"
+                  style={{ stroke: "var(--accent2-a008)" }}
                   strokeWidth="3"
                 />
                 <circle
@@ -499,7 +499,7 @@ export function FocusTimer({
                   cy="160"
                   r="126"
                   fill="none"
-                  stroke="rgba(84,221,255,0.09)"
+                  style={{ stroke: "var(--accent-a009)" }}
                   strokeWidth="1"
                   strokeDasharray="3 9"
                 />
@@ -508,23 +508,23 @@ export function FocusTimer({
                   cy="160"
                   r="138"
                   fill="none"
-                  stroke={ringColor}
                   strokeWidth="4"
                   strokeLinecap="round"
                   strokeDasharray={circumference}
                   strokeDashoffset={ringOffset}
                   transform="rotate(-90 160 160)"
                   style={{
+                    stroke: ringColor,
                     filter:
                       phase === "break"
-                        ? "drop-shadow(0 0 6px rgba(61,214,163,0.7))"
-                        : "drop-shadow(0 0 6px rgba(84,221,255,0.7))",
+                        ? "drop-shadow(0 0 6px rgb(var(--mint-rgb) / 0.7))"
+                        : "drop-shadow(0 0 6px var(--accent-a07))",
                     transition: "stroke-dashoffset 0.3s linear",
                   }}
                 />
                 <path
                   d="M160 16v10M160 294v10M16 160h10M294 160h10"
-                  stroke="rgba(84,221,255,0.4)"
+                  style={{ stroke: "var(--accent-a04)" }}
                   strokeWidth="1.5"
                 />
               </svg>
@@ -680,8 +680,8 @@ export function FocusTimer({
                     className={cn(
                       "border px-2 py-2 font-mono text-sm transition-colors",
                       duration === minutes
-                        ? "border-[rgba(84,221,255,0.65)] bg-[rgba(59,158,255,0.16)] text-glow"
-                        : "border-[rgba(84,221,255,0.14)] bg-[rgba(3,10,20,0.45)] text-mist hover:border-[rgba(84,221,255,0.35)]",
+                        ? "border-[var(--accent-a065)] bg-[var(--accent2-a016)] text-glow"
+                        : "border-[var(--accent-a014)] bg-[var(--panel-a045)] text-mist hover:border-[var(--accent-a035)]",
                     )}
                   >
                     {minutes}m
@@ -702,8 +702,8 @@ export function FocusTimer({
                     className={cn(
                       "border py-1.5 font-mono text-xs transition-colors",
                       focusRating === rating
-                        ? "border-[rgba(84,221,255,0.7)] bg-[rgba(59,158,255,0.18)] text-glow"
-                        : "border-[rgba(84,221,255,0.12)] bg-[rgba(3,10,20,0.4)] text-mist hover:border-[rgba(84,221,255,0.35)]",
+                        ? "border-[var(--accent-a07)] bg-[var(--accent2-a018)] text-glow"
+                        : "border-[var(--accent-a012)] bg-[var(--panel-a04)] text-mist hover:border-[var(--accent-a035)]",
                     )}
                     aria-label={`Focus quality ${rating}: ${focusLabel(rating)}`}
                   >
@@ -720,8 +720,8 @@ export function FocusTimer({
               className={cn(
                 "flex w-full items-center justify-between border px-3 py-2.5 text-left transition-colors",
                 pomodoro
-                  ? "border-[rgba(61,214,163,0.4)] bg-[rgba(61,214,163,0.08)]"
-                  : "border-[rgba(84,221,255,0.12)] bg-[rgba(3,10,20,0.4)]",
+                  ? "border-[rgb(var(--mint-rgb)/0.4)] bg-[rgb(var(--mint-rgb)/0.08)]"
+                  : "border-[var(--accent-a012)] bg-[var(--panel-a04)]",
               )}
               aria-pressed={pomodoro}
             >
@@ -745,15 +745,15 @@ export function FocusTimer({
                 className={cn(
                   "relative h-5 w-9 border transition-colors",
                   pomodoro
-                    ? "border-[rgba(61,214,163,0.5)] bg-[rgba(61,214,163,0.28)]"
-                    : "border-[rgba(84,221,255,0.18)] bg-[rgba(2,8,16,0.8)]",
+                    ? "border-[rgb(var(--mint-rgb)/0.5)] bg-[rgb(var(--mint-rgb)/0.28)]"
+                    : "border-[var(--accent-a018)] bg-[var(--void-a08)]",
                 )}
               >
                 <span
                   className={cn(
                     "absolute top-0.5 h-3.5 w-3.5 transition-all",
                     pomodoro
-                      ? "left-[18px] bg-mint shadow-[0_0_6px_#3dd6a3]"
+                      ? "left-[18px] bg-mint shadow-[0_0_6px_var(--mint)]"
                       : "left-0.5 bg-muted",
                   )}
                 />
@@ -786,7 +786,7 @@ export function FocusTimer({
               </div>
             ) : null}
 
-            <div className="flex items-center gap-2 border border-[rgba(84,221,255,0.12)] bg-[rgba(3,10,20,0.4)] px-3 py-2">
+            <div className="flex items-center gap-2 border border-[var(--accent-a012)] bg-[var(--panel-a04)] px-3 py-2">
               <Timer className="h-3.5 w-3.5 text-muted" />
               <span className="text-[0.64rem] text-muted">Estimated reward</span>
               <span className="ml-auto font-mono text-xs text-gold">
@@ -797,7 +797,7 @@ export function FocusTimer({
             {subjects.length === 0 ? (
               <Link
                 href="/settings"
-                className="flex items-center gap-2 border border-[rgba(255,191,90,0.24)] bg-[rgba(255,191,90,0.05)] px-3 py-2 text-xs text-gold"
+                className="flex items-center gap-2 border border-[rgb(var(--gold-rgb)/0.24)] bg-[rgb(var(--gold-rgb)/0.05)] px-3 py-2 text-xs text-gold"
               >
                 <AlertTriangle className="h-4 w-4" />
                 Add a subject in Settings to begin.
@@ -845,7 +845,7 @@ export function FocusTimer({
             </button>
 
             <div className="text-center">
-              <div className="mx-auto grid h-12 w-12 place-items-center border border-[rgba(61,214,163,0.35)] bg-[rgba(61,214,163,0.08)]">
+              <div className="mx-auto grid h-12 w-12 place-items-center border border-[rgb(var(--mint-rgb)/0.35)] bg-[rgb(var(--mint-rgb)/0.08)]">
                 <Check className="h-6 w-6 text-mint" />
               </div>
               <p className="mt-3 hud-label hud-label--bright">Gate cleared</p>
@@ -869,8 +869,8 @@ export function FocusTimer({
                     className={cn(
                       "border py-2 font-mono text-sm transition-colors",
                       focusRating === rating
-                        ? "border-[rgba(84,221,255,0.7)] bg-[rgba(59,158,255,0.18)] text-glow"
-                        : "border-[rgba(84,221,255,0.12)] bg-[rgba(3,10,20,0.4)] text-mist hover:border-[rgba(84,221,255,0.35)]",
+                        ? "border-[var(--accent-a07)] bg-[var(--accent2-a018)] text-glow"
+                        : "border-[var(--accent-a012)] bg-[var(--panel-a04)] text-mist hover:border-[var(--accent-a035)]",
                     )}
                     aria-label={`Focus quality ${rating}: ${focusLabel(rating)}`}
                   >
@@ -897,7 +897,7 @@ export function FocusTimer({
               />
             </div>
 
-            <div className="mt-4 flex items-center justify-between border border-[rgba(84,221,255,0.12)] bg-[rgba(3,10,20,0.45)] px-3 py-2.5">
+            <div className="mt-4 flex items-center justify-between border border-[var(--accent-a012)] bg-[var(--panel-a045)] px-3 py-2.5">
               <span className="hud-label">XP reward</span>
               <span className="font-mono text-sm text-gold">
                 +{formatNumber(estimatedXp)}

@@ -88,7 +88,7 @@ function CoreInfo({
   detail: string;
 }) {
   return (
-    <div className="border border-[rgba(84,221,255,0.1)] bg-[rgba(3,10,20,0.38)] px-3 py-3 transition-colors duration-200 hover:border-[rgba(84,221,255,0.25)]">
+    <div className="border border-[var(--accent-a01)] bg-[var(--panel-a038)] px-3 py-3 transition-colors duration-200 hover:border-[var(--accent-a025)]">
       <div className="flex items-center gap-1.5">
         <Icon className="h-3.5 w-3.5 text-glow/60" strokeWidth={1.6} />
         <p className="hud-label">{label}</p>

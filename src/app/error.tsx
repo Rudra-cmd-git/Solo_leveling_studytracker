@@ -17,10 +17,10 @@ export default function Error({
         <span className="panel-corner panel-corner--bl" />
         <span className="panel-corner panel-corner--br" />
         <AlertTriangle
-          className="mx-auto h-10 w-10 text-[#ff8296]"
+          className="mx-auto h-10 w-10 text-danger"
           strokeWidth={1.2}
         />
-        <p className="hud-label mt-5 text-[#ffb1bd]">System malfunction</p>
+        <p className="hud-label mt-5 text-danger">System malfunction</p>
         <h1 className="title-display mt-2 text-2xl text-ice">
           Connection interrupted
         </h1>

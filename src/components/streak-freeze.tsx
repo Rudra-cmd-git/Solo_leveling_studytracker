@@ -58,10 +58,10 @@ export function StreakFreeze({ streak }: { streak: StreakInfo }) {
             className={cn(
               "flex h-11 w-11 shrink-0 items-center justify-center border transition-all duration-300",
               available
-                ? "border-[rgba(84,221,255,0.4)] bg-[rgba(59,158,255,0.1)] text-glow animate-shield-charge"
+                ? "border-[var(--accent-a04)] bg-[var(--accent2-a01)] text-glow animate-shield-charge"
                 : usedThisWeek
-                  ? "border-[rgba(255,191,90,0.35)] bg-[rgba(255,191,90,0.08)] text-gold"
-                  : "border-[rgba(84,221,255,0.12)] bg-[rgba(3,10,20,0.4)] text-muted",
+                  ? "border-[rgb(var(--gold-rgb)/0.35)] bg-[rgb(var(--gold-rgb)/0.08)] text-gold"
+                  : "border-[var(--accent-a012)] bg-[var(--panel-a04)] text-muted",
             )}
           >
             {available ? (
@@ -74,7 +74,7 @@ export function StreakFreeze({ streak }: { streak: StreakInfo }) {
           </div>
         </div>
 
-        <div className="mt-4 flex items-center gap-2 border border-[rgba(84,221,255,0.12)] bg-[rgba(3,10,20,0.4)] px-3 py-2.5">
+        <div className="mt-4 flex items-center gap-2 border border-[var(--accent-a012)] bg-[var(--panel-a04)] px-3 py-2.5">
           <Flame className={cn("h-3.5 w-3.5 text-gold", streak.current > 0 && "animate-flame-flicker")} />
           <p className="text-[0.66rem] leading-relaxed text-muted">
             {streak.atRisk
@@ -105,7 +105,7 @@ export function StreakFreeze({ streak }: { streak: StreakInfo }) {
         </button>
 
         {streak.frozenDates.length > 0 ? (
-          <p className="mt-3 border-t border-[rgba(84,221,255,0.08)] pt-2 font-mono text-[0.55rem] text-muted">
+          <p className="mt-3 border-t border-[var(--accent-a008)] pt-2 font-mono text-[0.55rem] text-muted">
             Frozen days: {streak.frozenDates.slice(-4).join(", ")}
           </p>
         ) : null}

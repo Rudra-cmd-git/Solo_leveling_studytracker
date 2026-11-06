@@ -13,15 +13,15 @@ export function StatusWindow({ data }: { data: AppData }) {
 
   return (
     <SystemPanel hero className="boot-in overflow-hidden">
-      <div className="status-orbit-outer pointer-events-none absolute top-1/2 -right-24 h-72 w-72 rounded-full border border-dashed border-[rgba(84,221,255,0.08)]" />
-      <div className="status-orbit-inner pointer-events-none absolute top-1/2 -right-10 h-40 w-40 rounded-full border border-[rgba(84,221,255,0.11)]" />
+      <div className="status-orbit-outer pointer-events-none absolute top-1/2 -right-24 h-72 w-72 rounded-full border border-dashed border-[var(--accent-a008)]" />
+      <div className="status-orbit-inner pointer-events-none absolute top-1/2 -right-10 h-40 w-40 rounded-full border border-[var(--accent-a011)]" />
 
       <div className="relative flex flex-col gap-7 xl:flex-row xl:items-center xl:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-3">
             <span className="hud-label hud-label--bright">Status window</span>
             <span className="korean-accent">상태</span>
-            <span className="ml-1 h-px w-16 bg-gradient-to-r from-[rgba(84,221,255,0.45)] to-transparent" />
+            <span className="ml-1 h-px w-16 bg-gradient-to-r from-[var(--accent-a045)] to-transparent" />
           </div>
 
           <div className="mt-5 flex items-center gap-5 sm:gap-6">
@@ -35,7 +35,7 @@ export function StatusWindow({ data }: { data: AppData }) {
                 <span className="font-mono text-xs tracking-[0.14em] text-glow">
                   LEVEL <CountUp value={data.progress.level} />
                 </span>
-                <span className="h-3 w-px bg-[rgba(84,221,255,0.22)]" />
+                <span className="h-3 w-px bg-[var(--accent-a022)]" />
                 <span
                   className="text-[0.68rem] font-semibold tracking-[0.18em] uppercase"
                   style={{ color: data.progress.rank.color }}
@@ -103,7 +103,7 @@ export function StatusWindow({ data }: { data: AppData }) {
         </div>
       </div>
 
-      <div className="mt-6 grid gap-2 border-t border-[rgba(84,221,255,0.1)] pt-5 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="mt-6 grid gap-2 border-t border-[var(--accent-a01)] pt-5 sm:grid-cols-2 xl:grid-cols-5">
         <StatsGrid stats={data.stats} compact />
       </div>
 
@@ -141,7 +141,7 @@ function MetricCard({
   accent: string;
 }) {
   return (
-    <div className="border border-[rgba(84,221,255,0.11)] bg-[rgba(3,10,20,0.48)] px-3 py-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-[rgba(84,221,255,0.24)]">
+    <div className="border border-[var(--accent-a011)] bg-[var(--panel-a048)] px-3 py-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--accent-a024)]">
       <div className="flex items-center gap-1.5">
         <Icon className={cn("h-3.5 w-3.5", accent, label === "Streak" && value > 0 && "animate-flame-flicker")} strokeWidth={1.7} />
         <span className="hud-label">{label}</span>

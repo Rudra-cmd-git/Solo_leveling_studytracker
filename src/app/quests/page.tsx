@@ -102,7 +102,7 @@ export default async function QuestsPage() {
                 {formatNumber(data.progress.totalXp)}
               </p>
             </div>
-            <div className="border border-[rgba(84,221,255,0.14)] bg-[rgba(3,10,20,0.4)] p-3">
+            <div className="border border-[var(--accent-a014)] bg-[var(--panel-a04)] p-3">
               <p className="hud-label">System warning</p>
               <p className="mt-1 text-[0.68rem] leading-relaxed text-muted">
                 Unclaimed rewards are not lost. Claim them after completing the

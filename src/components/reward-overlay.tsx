@@ -186,7 +186,7 @@ export function RewardOverlay({
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.62, duration: 0.5, ease: EASE }}
             >
-              <div className="border border-[rgba(84,221,255,0.24)] bg-[rgba(59,158,255,0.08)] px-5 py-2 text-center">
+              <div className="border border-[var(--accent-a024)] bg-[var(--accent2-a008)] px-5 py-2 text-center">
                 <p className="hud-label">XP gained</p>
                 <CountUp
                   value={reward.xp}
@@ -196,7 +196,7 @@ export function RewardOverlay({
                 />
               </div>
               {reward.level ? (
-                <div className="border border-[rgba(84,221,255,0.18)] bg-[rgba(4,12,23,0.6)] px-5 py-2 text-center">
+                <div className="border border-[var(--accent-a018)] bg-[rgb(var(--void-rgb)/0.6)] px-5 py-2 text-center">
                   <p className="hud-label">Level</p>
                   <CountUp
                     value={reward.level}
@@ -220,7 +220,7 @@ export function RewardOverlay({
                 {reward.achievements.map((achievement, index) => (
                   <motion.div
                     key={achievement.title}
-                    className="flex items-center gap-3 border border-[rgba(84,221,255,0.16)] bg-[rgba(59,158,255,0.06)] px-3 py-2"
+                    className="flex items-center gap-3 border border-[var(--accent-a016)] bg-[var(--accent2-a006)] px-3 py-2"
                     initial={{ opacity: 0, x: -18, filter: "blur(4px)" }}
                     animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
                     transition={{

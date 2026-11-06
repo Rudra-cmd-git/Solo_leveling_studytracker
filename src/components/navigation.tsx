@@ -74,8 +74,8 @@ export function SideNavigation({ shell }: { shell: ShellData }) {
   const pathname = usePathname();
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-30 hidden w-[18.5rem] flex-col border-r border-[rgba(84,221,255,0.12)] bg-[#030812]/88 px-4 py-5 backdrop-blur-xl lg:flex">
-      <div className="pointer-events-none absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-[rgba(84,221,255,0.35)] to-transparent" />
+    <aside className="fixed inset-y-0 left-0 z-30 hidden w-[18.5rem] flex-col border-r border-[var(--accent-a012)] bg-[rgb(var(--void-rgb)/0.88)] px-4 py-5 backdrop-blur-xl lg:flex">
+      <div className="pointer-events-none absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-[var(--accent-a035)] to-transparent" />
 
       <Link href="/" className="group flex items-center gap-3 px-2">
         <SystemSigil className="h-11 w-11 shrink-0 transition-transform duration-500 group-hover:rotate-6" />
@@ -113,7 +113,7 @@ export function SideNavigation({ shell }: { shell: ShellData }) {
               {active ? (
                 <motion.span
                   layoutId="side-nav-active"
-                  className="absolute top-1/2 left-0 h-6 w-[2px] -translate-y-1/2 bg-glow shadow-[0_0_10px_#54ddff]"
+                  className="absolute top-1/2 left-0 h-6 w-[2px] -translate-y-1/2 bg-glow shadow-[0_0_10px_var(--accent)]"
                   transition={{ type: "spring", stiffness: 520, damping: 38 }}
                 />
               ) : null}
@@ -165,7 +165,7 @@ export function SideNavigation({ shell }: { shell: ShellData }) {
 
 export function MobileTopBar({ shell }: { shell: ShellData }) {
   return (
-    <header className="sticky top-0 z-30 border-b border-[rgba(84,221,255,0.12)] bg-[#030812]/88 px-4 py-2.5 backdrop-blur-xl lg:hidden">
+    <header className="sticky top-0 z-30 border-b border-[var(--accent-a012)] bg-[rgb(var(--void-rgb)/0.88)] px-4 py-2.5 backdrop-blur-xl lg:hidden">
       <div className="flex items-center gap-3">
         <SystemSigil className="h-8 w-8" />
         <div className="min-w-0 flex-1">
@@ -178,7 +178,7 @@ export function MobileTopBar({ shell }: { shell: ShellData }) {
         </div>
         <SoundToggle compact />
         <div
-          className="flex h-8 min-w-8 items-center justify-center border border-[rgba(84,221,255,0.28)] bg-[rgba(59,158,255,0.12)] px-2 font-display text-sm font-bold"
+          className="flex h-8 min-w-8 items-center justify-center border border-[var(--accent-a028)] bg-[var(--accent2-a012)] px-2 font-display text-sm font-bold"
           style={{ color: shell.progress.rank.color }}
           title={`${shell.progress.rank.rank}-Rank`}
         >
@@ -194,7 +194,7 @@ export function MobileNavigation() {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-[rgba(84,221,255,0.18)] bg-[#030812]/94 px-1 pb-[max(0.4rem,env(safe-area-inset-bottom))] pt-1 backdrop-blur-xl lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--accent-a018)] bg-[rgb(var(--void-rgb)/0.94)] px-1 pb-[max(0.4rem,env(safe-area-inset-bottom))] pt-1 backdrop-blur-xl lg:hidden"
       aria-label="Mobile navigation"
     >
       <div className="grid grid-cols-6">
@@ -214,7 +214,7 @@ export function MobileNavigation() {
               {active ? (
                 <motion.span
                   layoutId="mobile-nav-active"
-                  className="absolute inset-x-2 top-0 h-px bg-glow shadow-[0_0_8px_#54ddff]"
+                  className="absolute inset-x-2 top-0 h-px bg-glow shadow-[0_0_8px_var(--accent)]"
                   transition={{ type: "spring", stiffness: 520, damping: 38 }}
                 />
               ) : null}

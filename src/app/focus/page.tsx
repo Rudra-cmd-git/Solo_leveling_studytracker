@@ -23,10 +23,10 @@ export default async function FocusPage() {
       />
 
       {data.streak.atRisk && (
-        <div className="border border-[rgba(255,84,104,0.4)] bg-[rgba(255,84,104,0.08)] p-4 rounded flex items-start gap-3">
-          <AlertTriangle className="mt-0.5 h-5 w-5 text-[#ff8296] shrink-0" />
+        <div className="border border-[rgb(var(--danger-rgb)/0.4)] bg-[rgb(var(--danger-rgb)/0.08)] p-4 rounded flex items-start gap-3">
+          <AlertTriangle className="mt-0.5 h-5 w-5 text-danger shrink-0" />
           <div>
-            <p className="font-semibold text-[#ffb1bd] text-[0.66rem] uppercase tracking-[0.1em]">
+            <p className="font-semibold text-danger text-[0.66rem] uppercase tracking-[0.1em]">
               Streak at risk
             </p>
             <p className="mt-1 text-[0.62rem] text-muted leading-snug">
@@ -105,7 +105,7 @@ export default async function FocusPage() {
             </div>
             <Link
               href="/quests"
-              className="mt-4 block border border-[rgba(84,221,255,0.15)] py-2 text-center text-[0.62rem] font-semibold tracking-[0.14em] text-mist uppercase transition-colors hover:border-[rgba(84,221,255,0.4)] hover:text-ice"
+              className="mt-4 block border border-[var(--accent-a015)] py-2 text-center text-[0.62rem] font-semibold tracking-[0.14em] text-mist uppercase transition-colors hover:border-[var(--accent-a04)] hover:text-ice"
             >
               Open quest log
             </Link>

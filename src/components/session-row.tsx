@@ -29,7 +29,7 @@ export function SessionRow({
         ease: [0.16, 1, 0.3, 1],
       }}
       className={cn(
-        "session-row flex items-center gap-3 border-b border-[rgba(84,221,255,0.08)] py-3 last:border-b-0",
+        "session-row flex items-center gap-3 border-b border-[var(--accent-a008)] py-3 last:border-b-0",
         className,
       )}
     >

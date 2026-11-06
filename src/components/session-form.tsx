@@ -171,8 +171,8 @@ export function SessionForm({
                   className={cn(
                     "border py-1.5 font-mono text-xs transition-colors",
                     focusRating === rating
-                      ? "border-[rgba(84,221,255,0.7)] bg-[rgba(59,158,255,0.18)] text-glow"
-                      : "border-[rgba(84,221,255,0.12)] bg-[rgba(3,10,20,0.4)] text-mist hover:border-[rgba(84,221,255,0.35)]",
+                      ? "border-[var(--accent-a07)] bg-[var(--accent2-a018)] text-glow"
+                      : "border-[var(--accent-a012)] bg-[var(--panel-a04)] text-mist hover:border-[var(--accent-a035)]",
                   )}
                   aria-label={`Focus quality ${rating}: ${focusLabel(rating)}`}
                 >
@@ -196,7 +196,7 @@ export function SessionForm({
             />
           </div>
 
-          <div className="flex items-center justify-between border border-[rgba(84,221,255,0.12)] bg-[rgba(3,10,20,0.45)] px-3 py-2">
+          <div className="flex items-center justify-between border border-[var(--accent-a012)] bg-[var(--panel-a045)] px-3 py-2">
             <span className="flex items-center gap-1.5 text-[0.62rem] tracking-[0.1em] text-muted uppercase">
               <Sparkles className="h-3 w-3 text-gold" /> Estimated
             </span>
@@ -208,7 +208,7 @@ export function SessionForm({
           {subjects.length === 0 ? (
             <Link
               href="/settings"
-              className="flex items-center gap-2 border border-[rgba(255,191,90,0.24)] bg-[rgba(255,191,90,0.05)] px-3 py-2 text-xs text-gold"
+              className="flex items-center gap-2 border border-[rgb(var(--gold-rgb)/0.24)] bg-[rgb(var(--gold-rgb)/0.05)] px-3 py-2 text-xs text-gold"
             >
               <AlertTriangle className="h-4 w-4" />
               Add a subject first

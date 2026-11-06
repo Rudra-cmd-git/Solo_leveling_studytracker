@@ -69,7 +69,7 @@ export function Heatmap({ days }: { days: HeatmapDay[] }) {
         </div>
       </div>
 
-      <div className="mt-4 flex items-center justify-between border-t border-[rgba(84,221,255,0.08)] pt-3">
+      <div className="mt-4 flex items-center justify-between border-t border-[var(--accent-a008)] pt-3">
         <span className="text-[0.56rem] tracking-[0.13em] text-muted uppercase">
           Less
         </span>

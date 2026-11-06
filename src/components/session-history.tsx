@@ -167,8 +167,8 @@ export function SessionHistory({
                       type="button"
                       onClick={() => setEditing(session)}
                       className={cn(
-                        "icon-button h-7 w-7 border-[rgba(84,221,255,0.1)]",
-                        "hover:border-[rgba(84,221,255,0.45)] hover:text-glow",
+                        "icon-button h-7 w-7 border-[var(--accent-a01)]",
+                        "hover:border-[var(--accent-a045)] hover:text-glow",
                       )}
                       aria-label={`Edit ${session.topic}`}
                     >
@@ -179,8 +179,8 @@ export function SessionHistory({
                       onClick={() => remove(session)}
                       disabled={deletingId === session.id}
                       className={cn(
-                        "icon-button h-7 w-7 border-[rgba(84,221,255,0.1)]",
-                        "hover:border-[rgba(255,84,104,0.5)] hover:text-[#ffadb8]",
+                        "icon-button h-7 w-7 border-[var(--accent-a01)]",
+                        "hover:border-[rgb(var(--danger-rgb)/0.5)] hover:text-danger",
                       )}
                       aria-label={`Delete ${session.topic}`}
                     >
@@ -197,7 +197,7 @@ export function SessionHistory({
             </AnimatePresence>
           ) : (
             <div className="flex min-h-64 flex-col items-center justify-center text-center">
-              <div className="grid h-12 w-12 place-items-center border border-[rgba(84,221,255,0.16)] bg-[rgba(59,158,255,0.04)]">
+              <div className="grid h-12 w-12 place-items-center border border-[var(--accent-a016)] bg-[var(--accent2-a004)]">
                 <SlidersHorizontal className="h-5 w-5 text-muted" />
               </div>
               <p className="mt-4 font-display text-lg text-ice">
@@ -212,7 +212,7 @@ export function SessionHistory({
         </div>
 
         {filtered.length > 0 ? (
-          <p className="mt-3 border-t border-[rgba(84,221,255,0.08)] pt-3 text-right font-mono text-[0.58rem] text-muted">
+          <p className="mt-3 border-t border-[var(--accent-a008)] pt-3 text-right font-mono text-[0.58rem] text-muted">
             Showing {filtered.length} of {sessions.length} total records
           </p>
         ) : null}

@@ -33,7 +33,7 @@ export function SystemPanel({
       {label ? (
         <div className="mb-3 flex items-center gap-2">
           <span className="hud-label hud-label--bright">{label}</span>
-          <span className="h-px flex-1 bg-[rgba(84,221,255,0.12)]" />
+          <span className="h-px flex-1 bg-[var(--accent-a012)]" />
         </div>
       ) : null}
       {children}

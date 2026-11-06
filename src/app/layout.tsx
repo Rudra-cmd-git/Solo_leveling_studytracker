@@ -49,10 +49,11 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   return (
     <html
       lang="en"
+      data-theme={shell.progress.rank.rank}
       className={`${cinzel.variable} ${rajdhani.variable} ${jetbrainsMono.variable}`}
     >
       <body>
-        <BattlefieldAtmosphere />
+        <BattlefieldAtmosphere rank={shell.progress.rank.rank} />
         <MotionProvider>
           <SoundProvider enabled={settings.soundEnabled}>
             <AmbienceController />

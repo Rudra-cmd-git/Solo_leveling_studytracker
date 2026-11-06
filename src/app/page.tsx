@@ -101,7 +101,7 @@ export default async function DashboardPage() {
             </div>
 
             {nextQuest ? (
-              <div className="w-full border border-[rgba(84,221,255,0.12)] bg-[rgba(3,10,20,0.4)] p-3">
+              <div className="w-full border border-[var(--accent-a012)] bg-[var(--panel-a04)] p-3">
                 <p className="hud-label">Next objective</p>
                 <p className="mt-1 truncate text-sm font-semibold text-ice">
                   {nextQuest.title}
@@ -112,7 +112,7 @@ export default async function DashboardPage() {
                 </p>
               </div>
             ) : (
-              <div className="w-full border border-[rgba(61,214,163,0.25)] bg-[rgba(61,214,163,0.05)] p-3 text-center">
+              <div className="w-full border border-[rgb(var(--mint-rgb)/0.25)] bg-[rgb(var(--mint-rgb)/0.05)] p-3 text-center">
                 <p className="text-sm font-semibold text-mint">
                   All available quests cleared.
                 </p>
@@ -175,14 +175,14 @@ export default async function DashboardPage() {
               ))}
               <Link
                 href="/sessions"
-                className="mt-4 flex items-center justify-center gap-1.5 border border-[rgba(84,221,255,0.15)] py-2 text-[0.64rem] font-semibold tracking-[0.14em] text-mist uppercase transition-colors hover:border-[rgba(84,221,255,0.4)] hover:text-ice"
+                className="mt-4 flex items-center justify-center gap-1.5 border border-[var(--accent-a015)] py-2 text-[0.64rem] font-semibold tracking-[0.14em] text-mist uppercase transition-colors hover:border-[var(--accent-a04)] hover:text-ice"
               >
                 View full history <ArrowRight className="h-3 w-3" />
               </Link>
             </div>
           ) : (
             <div className="flex min-h-44 flex-col items-center justify-center text-center">
-              <div className="grid h-12 w-12 place-items-center border border-[rgba(84,221,255,0.2)] bg-[rgba(59,158,255,0.06)]">
+              <div className="grid h-12 w-12 place-items-center border border-[var(--accent-a02)] bg-[var(--accent2-a006)]">
                 <Timer className="h-5 w-5 text-glow/70" />
               </div>
               <p className="mt-4 font-display text-lg text-ice">
@@ -214,7 +214,7 @@ export default async function DashboardPage() {
           </div>
           <Link
             href="/progress#achievements"
-            className="mt-4 flex items-center justify-center gap-1.5 border border-[rgba(84,221,255,0.15)] py-2 text-[0.64rem] font-semibold tracking-[0.14em] text-mist uppercase transition-colors hover:border-[rgba(84,221,255,0.4)] hover:text-ice"
+            className="mt-4 flex items-center justify-center gap-1.5 border border-[var(--accent-a015)] py-2 text-[0.64rem] font-semibold tracking-[0.14em] text-mist uppercase transition-colors hover:border-[var(--accent-a04)] hover:text-ice"
           >
             <Sparkles className="h-3 w-3" /> All achievements
           </Link>

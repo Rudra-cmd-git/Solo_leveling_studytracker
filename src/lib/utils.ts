@@ -20,10 +20,10 @@ export function focusLabel(value: number): string {
 }
 
 export function focusTone(value: number): string {
-  if (value >= 5) return "text-[#ff5b72]";
-  if (value >= 4) return "text-[#43a9ff]";
-  if (value >= 3) return "text-[#3dd6a3]";
-  return "text-[#8ca7bf]";
+  if (value >= 5) return "text-danger";
+  if (value >= 4) return "text-system";
+  if (value >= 3) return "text-mint";
+  return "text-mist";
 }
 
 export function metricLabel(metric: string, target: number): string {
