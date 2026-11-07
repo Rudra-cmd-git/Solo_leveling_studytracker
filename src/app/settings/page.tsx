@@ -1,6 +1,4 @@
-import { Cpu, Database, HardDrive, Play, Wifi } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { Cpu, Database, HardDrive, Wifi } from "lucide-react";
 import { CountUp } from "@/components/motion/count-up";
 import { DataManager } from "@/components/data-manager";
 import { PageHeader } from "@/components/page-header";
@@ -8,27 +6,16 @@ import { ProfileSettings } from "@/components/profile-settings";
 import { SubjectManager } from "@/components/subject-manager";
 import { SystemPanel } from "@/components/system-panel";
 import { NotificationSettings } from "@/components/notification-settings";
-import { markCinematicSeen } from "@/app/actions";
+import { OrientationSettings } from "@/components/orientation-settings";
 import { getAppData } from "@/lib/data";
 import { formatNumber } from "@/lib/utils";
 
 export default async function SettingsPage() {
   const data = await getAppData();
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
   const usage = data.sessions.reduce<Record<number, number>>((counts, session) => {
     counts[session.subjectId] = (counts[session.subjectId] ?? 0) + 1;
     return counts;
   }, {});
-
-  async function handleRewatch() {
-    startTransition(async () => {
-      const result = await markCinematicSeen(false);
-      if (result.ok) {
-        router.refresh();
-      }
-    });
-  }
 
   return (
     <div className="space-y-5 sm:space-y-6">
@@ -39,40 +26,7 @@ export default async function SettingsPage() {
         description="Adjust your parameters. Changes are recorded locally and take effect immediately."
       />
 
-      <SystemPanel label="System orientation" className="boot-in">
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="hud-label">Introduction cinematic</p>
-              <p className="mt-0.5 text-[0.62rem] text-muted">
-                {data.settings.cinematicSeen
-                  ? "You have completed the System orientation."
-                  : "The orientation has not been viewed yet."}
-              </p>
-            </div>
-            <button
-              onClick={handleRewatch}
-              disabled={isPending}
-              className="system-button--ghost flex items-center gap-2 px-4 py-1.5 text-[0.65rem]"
-            >
-              {isPending ? (
-                <span className="flex items-center gap-1.5 animate-pulse">
-                  <Play className="h-3 w-3" />
-                  Resetting...
-                </span>
-              ) : (
-                <>
-                  <Play className="h-3 w-3" />
-                  {data.settings.cinematicSeen ? "Rewatch Introduction" : "View Introduction"}
-                </>
-              )}
-            </button>
-          </div>
-          <p className="mt-1 text-[0.6rem] text-muted tracking-[0.14em] uppercase">
-            Replay the Hunter awakening guide on your next visit
-          </p>
-        </div>
-      </SystemPanel>
+      <OrientationSettings cinematicSeen={Boolean(data.settings.cinematicSeen)} />
 
       <div className="grid items-start gap-5 lg:grid-cols-[1.05fr_0.95fr]">
         <ProfileSettings name={data.player.name} settings={data.settings} />
@@ -83,7 +37,7 @@ export default async function SettingsPage() {
         </div>
       </div>
 
-            <SystemPanel label="System alerts" className="boot-in boot-in-delay-2">
+      <SystemPanel label="System alerts" className="boot-in boot-in-delay-2">
         <NotificationSettings
           enabled={data.settings.notificationsEnabled}
           reminderTime={data.settings.reminderTime}
