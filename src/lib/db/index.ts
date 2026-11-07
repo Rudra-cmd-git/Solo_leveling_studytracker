@@ -321,6 +321,7 @@ const MIGRATION_STATEMENTS = [
   "ALTER TABLE settings ADD COLUMN xp_bonuses_enabled INTEGER NOT NULL DEFAULT 0",
   "ALTER TABLE settings ADD COLUMN notifications_enabled INTEGER NOT NULL DEFAULT 0",
   "ALTER TABLE settings ADD COLUMN reminder_time TEXT NOT NULL DEFAULT '18:00'",
+  "ALTER TABLE settings ADD COLUMN cinematic_seen INTEGER NOT NULL DEFAULT 0",
   "ALTER TABLE quests ADD COLUMN subject_id INTEGER REFERENCES subjects(id)",
 ];
 
@@ -390,8 +391,8 @@ async function initializeSchema(client: Client): Promise<void> {
     },
     {
       sql: `INSERT OR IGNORE INTO settings
-        (id, daily_goal_minutes, default_timer_minutes, timezone, sound_enabled, xp_bonuses_enabled, onboarded)
-        VALUES (1, 60, 25, 'Asia/Kolkata', 1, 0, 0)`,
+        (id, daily_goal_minutes, default_timer_minutes, timezone, sound_enabled, xp_bonuses_enabled, onboarded, cinematic_seen)
+        VALUES (1, 60, 25, 'Asia/Kolkata', 1, 0, 0, 0)`,
       args: [],
     },
     ...DEFAULT_SUBJECTS.map((subject) => ({

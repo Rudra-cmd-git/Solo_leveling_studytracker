@@ -1162,6 +1162,10 @@ a {
   }
 }
 
+.animate-pulse-dot {
+  animation: pulse-dot 1.9s ease-in-out infinite;
+}
+
 @keyframes pulse-dot {
   0%,
   100% {

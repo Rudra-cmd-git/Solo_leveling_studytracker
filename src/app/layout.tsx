@@ -6,6 +6,7 @@ import { AppShell } from "@/components/app-shell";
 import { BattlefieldAtmosphere } from "@/components/battlefield-atmosphere";
 import { MotionProvider } from "@/components/motion/motion-provider";
 import { OnboardingGate } from "@/components/onboarding-gate";
+import { CinematicIntro } from "@/components/cinematic-intro";
 import { SoundProvider } from "@/components/sound-provider";
 import { getSettingsData, getShellData } from "@/lib/data";
 import "./globals.css";
@@ -60,6 +61,8 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             <AppShell shell={shell}>{children}</AppShell>
             {!shell.onboarded ? (
               <OnboardingGate initialTimeZone={settings.timezone} />
+            ) : !shell.cinematicSeen ? (
+              <CinematicIntro />
             ) : null}
           </SoundProvider>
         </MotionProvider>

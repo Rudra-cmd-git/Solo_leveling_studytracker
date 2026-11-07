@@ -660,6 +660,20 @@ export async function completeOnboarding(
   return { ok: true };
 }
 
+export async function markCinematicSeen(
+  seen: boolean,
+): Promise<ActionResult> {
+  await ensureDatabase();
+
+  await db
+    .update(settings)
+    .set({ cinematicSeen: seen })
+    .where(eq(settings.id, 1));
+
+  revalidateAll();
+  return { ok: true };
+}
+
 export async function addSubject(
   name: string,
   color: string,

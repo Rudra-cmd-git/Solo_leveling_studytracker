@@ -74,6 +74,7 @@ async function getSettingsRow(): Promise<SettingsData> {
     notificationsEnabled: row.notificationsEnabled,
     reminderTime: row.reminderTime,
     onboarded: row.onboarded,
+    cinematicSeen: row.cinematicSeen,
   };
 }
 
@@ -442,6 +443,7 @@ export const getShellData = cache(async (): Promise<ShellData> => {
     name: player.name,
     progress: progressFromXp(player.totalXp),
     onboarded: appSettings.onboarded,
+    cinematicSeen: appSettings.cinematicSeen,
     soundEnabled: appSettings.soundEnabled,
   };
 });
