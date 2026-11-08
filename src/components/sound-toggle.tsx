@@ -39,7 +39,7 @@ export function SoundToggle({ compact = false }: { compact?: boolean }) {
         title={isOn ? "Mute dungeon audio" : "Enable dungeon audio"}
         className={cn(
           "icon-button h-8 w-8 shrink-0",
-          isOn && "border-[var(--accent-a044)] text-glow",
+          isOn && "border-[rgba(84,221,255,0.44)] text-glow",
           isPending && "opacity-50",
         )}
       >
@@ -61,8 +61,8 @@ export function SoundToggle({ compact = false }: { compact?: boolean }) {
       className={cn(
         "flex w-full items-center gap-2 border px-2 py-2 text-left transition-colors",
         isOn
-          ? "border-[var(--accent-a028)] bg-[var(--accent2-a008)] hover:border-[var(--accent-a048)]"
-          : "border-[var(--accent-a01)] bg-[var(--panel-a04)] hover:border-[var(--accent-a028)]",
+          ? "border-[rgba(84,221,255,0.28)] bg-[rgba(59,158,255,0.08)] hover:border-[rgba(84,221,255,0.48)]"
+          : "border-[rgba(84,221,255,0.1)] bg-[rgba(3,10,20,0.4)] hover:border-[rgba(84,221,255,0.28)]",
         isPending && "opacity-60",
       )}
     >
@@ -83,15 +83,15 @@ export function SoundToggle({ compact = false }: { compact?: boolean }) {
         className={cn(
           "relative h-4 w-7 shrink-0 border transition-colors",
           isOn
-            ? "border-[var(--accent-a05)] bg-[var(--accent2-a028)]"
-            : "border-[var(--accent-a018)] bg-[var(--void-a08)]",
+            ? "border-[rgba(84,221,255,0.5)] bg-[rgba(59,158,255,0.28)]"
+            : "border-[rgba(84,221,255,0.18)] bg-[rgba(2,8,16,0.8)]",
         )}
       >
         <span
           className={cn(
             "absolute top-0.5 h-2.5 w-2.5 transition-all",
             isOn
-              ? "left-[13px] bg-glow shadow-[0_0_6px_var(--accent)]"
+              ? "left-[13px] bg-glow shadow-[0_0_6px_#54ddff]"
               : "left-0.5 bg-muted",
           )}
         />

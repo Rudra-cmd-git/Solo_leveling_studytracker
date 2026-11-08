@@ -1,13 +1,5 @@
 type ConfettiFn = typeof import("canvas-confetti");
 
-function themeColor(name: string, fallback: string) {
-  if (typeof document === "undefined") return fallback;
-  const value = getComputedStyle(document.documentElement)
-    .getPropertyValue(name)
-    .trim();
-  return value || fallback;
-}
-
 async function loadConfetti(): Promise<ConfettiFn | null> {
   if (typeof window === "undefined") return null;
   const loaded = (await import("canvas-confetti")) as unknown as {
@@ -24,14 +16,9 @@ export async function fireRewardConfetti({
   const confetti = await loadConfetti();
   if (!confetti) return;
 
-  const accent = themeColor("--accent", "#54ddff");
-  const accentBright = themeColor("--accent-bright", "#aeeaff");
-  const accent2 = themeColor("--accent-2", "#3b9eff");
-  const gold = themeColor("--gold", "#ffbf5a");
-
   const colors = rankedUp
-    ? [gold, accentBright, accent, accent2]
-    : [accent, accentBright, accent2];
+    ? ["#ffbf5a", "#ffd98a", "#fff3d0", "#54ddff", "#8be9ff"]
+    : ["#54ddff", "#8be9ff", "#3b9eff", "#aeeaff"];
 
   confetti({
     particleCount: rankedUp ? 110 : 60,
@@ -84,12 +71,7 @@ export async function fireQuestConfetti() {
     scalar: 0.72,
     gravity: 0.9,
     origin: { y: 0.62 },
-    colors: [
-      themeColor("--mint", "#3dd6a3"),
-      themeColor("--gold", "#ffbf5a"),
-      themeColor("--accent", "#54ddff"),
-      themeColor("--accent-bright", "#aeeaff"),
-    ],
+    colors: ["#3dd6a3", "#8ff0ca", "#ffbf5a", "#54ddff"],
     zIndex: 120,
     disableForReducedMotion: true,
   });

@@ -90,7 +90,7 @@ export function OnboardingGate({
 
         <div className="divider-glow my-5" />
 
-        <div className="space-y-2 border-l border-[var(--accent-a028)] pl-4">
+        <div className="space-y-2 border-l border-[rgba(84,221,255,0.28)] pl-4">
           <p className="font-mono text-xs leading-relaxed text-mist">
             <span className="text-glow">[SYSTEM]</span> You have been selected
             as a Player.
@@ -164,7 +164,7 @@ export function OnboardingGate({
           </div>
 
           {error ? (
-            <div className="flex items-start gap-2 border border-[rgb(var(--danger-rgb)/0.3)] bg-[rgb(var(--danger-rgb)/0.06)] px-3 py-2 text-sm text-danger">
+            <div className="flex items-start gap-2 border border-[rgba(255,84,104,0.3)] bg-[rgba(255,84,104,0.06)] px-3 py-2 text-sm text-[#ffb3bc]">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>{error}</span>
             </div>

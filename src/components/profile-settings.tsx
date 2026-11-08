@@ -188,8 +188,8 @@ export function ProfileSettings({
               className={cn(
                 "flex w-full items-center justify-between border px-3 py-2.5 text-left transition-colors",
                 soundEnabled
-                  ? "border-[var(--accent-a036)] bg-[var(--accent2-a009)]"
-                  : "border-[var(--accent-a012)] bg-[var(--panel-a04)]",
+                  ? "border-[rgba(84,221,255,0.36)] bg-[rgba(59,158,255,0.09)]"
+                  : "border-[rgba(84,221,255,0.12)] bg-[rgba(3,10,20,0.4)]",
               )}
               aria-pressed={soundEnabled}
             >
@@ -212,15 +212,15 @@ export function ProfileSettings({
                 className={cn(
                   "relative h-5 w-9 border transition-colors",
                   soundEnabled
-                    ? "border-[var(--accent-a05)] bg-[var(--accent2-a028)]"
-                    : "border-[var(--accent-a018)] bg-[var(--void-a08)]",
+                    ? "border-[rgba(84,221,255,0.5)] bg-[rgba(59,158,255,0.28)]"
+                    : "border-[rgba(84,221,255,0.18)] bg-[rgba(2,8,16,0.8)]",
                 )}
               >
                 <span
                   className={cn(
                     "absolute top-0.5 h-3.5 w-3.5 transition-all",
                     soundEnabled
-                      ? "left-[18px] bg-glow shadow-[0_0_6px_var(--accent)]"
+                      ? "left-[18px] bg-glow shadow-[0_0_6px_#54ddff]"
                       : "left-0.5 bg-muted",
                   )}
                 />
@@ -243,7 +243,7 @@ export function ProfileSettings({
                     type="button"
                     data-sfx-silent
                     onClick={() => play(s.key, { force: true })}
-                    className="inline-flex items-center gap-1 border border-[var(--accent-a02)] bg-[var(--accent2-a008)] px-2 py-0.5 text-ice transition-colors hover:border-glow hover:text-glow"
+                    className="inline-flex items-center gap-1 border border-[rgba(84,221,255,0.2)] bg-[rgba(59,158,255,0.08)] px-2 py-0.5 text-ice transition-colors hover:border-glow hover:text-glow"
                   >
                     <Play className="h-2.5 w-2.5 fill-current" /> {s.label}
                   </button>
@@ -254,7 +254,7 @@ export function ProfileSettings({
 
           <Link
             href="/sound-lab"
-            className="flex w-full items-center justify-between border border-[var(--accent-a012)] bg-[var(--panel-a04)] px-3 py-2.5 text-left transition-colors hover:border-[var(--accent-a032)] hover:bg-[var(--accent2-a006)]"
+            className="flex w-full items-center justify-between border border-[rgba(84,221,255,0.12)] bg-[rgba(3,10,20,0.4)] px-3 py-2.5 text-left transition-colors hover:border-[rgba(84,221,255,0.32)] hover:bg-[rgba(59,158,255,0.06)]"
           >
             <span className="flex items-center gap-2.5">
               <AudioLines className="h-4 w-4 text-glow/70" />
@@ -276,8 +276,8 @@ export function ProfileSettings({
             className={cn(
               "flex w-full items-center justify-between border px-3 py-2.5 text-left transition-colors",
               xpBonusesEnabled
-                ? "border-[rgb(var(--gold-rgb)/0.4)] bg-[rgb(var(--gold-rgb)/0.08)]"
-                : "border-[var(--accent-a012)] bg-[var(--panel-a04)]",
+                ? "border-[rgba(255,191,90,0.4)] bg-[rgba(255,191,90,0.08)]"
+                : "border-[rgba(84,221,255,0.12)] bg-[rgba(3,10,20,0.4)]",
             )}
             aria-pressed={xpBonusesEnabled}
           >
@@ -301,15 +301,15 @@ export function ProfileSettings({
               className={cn(
                 "relative h-5 w-9 border transition-colors",
                 xpBonusesEnabled
-                  ? "border-[rgb(var(--gold-rgb)/0.5)] bg-[rgb(var(--gold-rgb)/0.28)]"
-                  : "border-[var(--accent-a018)] bg-[var(--void-a08)]",
+                  ? "border-[rgba(255,191,90,0.5)] bg-[rgba(255,191,90,0.28)]"
+                  : "border-[rgba(84,221,255,0.18)] bg-[rgba(2,8,16,0.8)]",
               )}
             >
               <span
                 className={cn(
                   "absolute top-0.5 h-3.5 w-3.5 transition-all",
                   xpBonusesEnabled
-                    ? "left-[18px] bg-gold shadow-[0_0_6px_var(--gold)]"
+                    ? "left-[18px] bg-gold shadow-[0_0_6px_#ffb84d]"
                     : "left-0.5 bg-muted",
                 )}
               />

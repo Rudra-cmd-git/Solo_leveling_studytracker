@@ -173,8 +173,8 @@ export function SessionEditDialog({
                     className={cn(
                       "border py-1.5 font-mono text-xs transition-colors",
                       focusRating === rating
-                        ? "border-[var(--accent-a07)] bg-[var(--accent2-a018)] text-glow"
-                        : "border-[var(--accent-a012)] bg-[var(--panel-a04)] text-mist hover:border-[var(--accent-a035)]",
+                        ? "border-[rgba(84,221,255,0.7)] bg-[rgba(59,158,255,0.18)] text-glow"
+                        : "border-[rgba(84,221,255,0.12)] bg-[rgba(3,10,20,0.4)] text-mist hover:border-[rgba(84,221,255,0.35)]",
                     )}
                     aria-label={`Focus quality ${rating}: ${focusLabel(rating)}`}
                   >
@@ -198,13 +198,13 @@ export function SessionEditDialog({
             </div>
 
             {error ? (
-              <div className="flex items-start gap-2 border border-[rgb(var(--danger-rgb)/0.3)] bg-[rgb(var(--danger-rgb)/0.06)] px-3 py-2 text-sm text-danger">
+              <div className="flex items-start gap-2 border border-[rgba(255,84,104,0.3)] bg-[rgba(255,84,104,0.06)] px-3 py-2 text-sm text-[#ffb3bc]">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>{error}</span>
               </div>
             ) : null}
 
-            <div className="flex items-center justify-between border border-[var(--accent-a012)] bg-[var(--panel-a045)] px-3 py-2">
+            <div className="flex items-center justify-between border border-[rgba(84,221,255,0.12)] bg-[rgba(3,10,20,0.45)] px-3 py-2">
               <span className="hud-label">Estimated XP</span>
               <span className="font-mono text-xs text-gold">
                 +{formatNumber(sessionXp(duration, focusRating))}

@@ -53,21 +53,12 @@ export function XpTrend({ days }: { days: DayActivity[] }) {
         >
           <defs>
             <linearGradient id="xp-area" x1="0" y1="0" x2="0" y2="1">
-              <stop
-                offset="0%"
-                style={{ stopColor: "var(--accent)", stopOpacity: 0.28 }}
-              />
-              <stop
-                offset="100%"
-                style={{ stopColor: "var(--accent)", stopOpacity: 0 }}
-              />
+              <stop offset="0%" stopColor="#54ddff" stopOpacity="0.28" />
+              <stop offset="100%" stopColor="#54ddff" stopOpacity="0" />
             </linearGradient>
             <linearGradient id="xp-line" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" style={{ stopColor: "var(--accent-deep)" }} />
-              <stop
-                offset="100%"
-                style={{ stopColor: "var(--accent-bright)" }}
-              />
+              <stop offset="0%" stopColor="#2b79c7" />
+              <stop offset="100%" stopColor="#aeeaff" />
             </linearGradient>
           </defs>
 
@@ -80,7 +71,7 @@ export function XpTrend({ days }: { days: DayActivity[] }) {
                 x2={width - paddingX}
                 y1={y}
                 y2={y}
-                style={{ stroke: "var(--accent-a008)" }}
+                stroke="rgba(84,221,255,0.08)"
                 strokeDasharray="2 6"
               />
             );
@@ -96,23 +87,18 @@ export function XpTrend({ days }: { days: DayActivity[] }) {
             strokeWidth="2"
             strokeLinejoin="round"
             strokeLinecap="round"
-            style={{ filter: "drop-shadow(0 0 4px var(--accent-a055))" }}
+            style={{ filter: "drop-shadow(0 0 4px rgba(84,221,255,0.55))" }}
           />
 
           {points.map((point, index) => (
             <g key={point.day.date}>
               <circle
                 className="xp-point"
+                style={{ animationDelay: `${0.5 + index * 0.05}s` }}
                 cx={point.x}
                 cy={point.y}
                 r={point.day.xp > 0 ? 2.8 : 1.7}
-                style={{
-                  animationDelay: `${0.5 + index * 0.05}s`,
-                  fill:
-                    point.day.xp > 0
-                      ? "var(--text-ice)"
-                      : "var(--text-muted)",
-                }}
+                fill={point.day.xp > 0 ? "#dcf6ff" : "#3a5c79"}
               >
                 <title>{`${point.day.date}: ${formatNumber(point.day.xp)} XP`}</title>
               </circle>
@@ -126,7 +112,7 @@ export function XpTrend({ days }: { days: DayActivity[] }) {
                 x={point.x}
                 y={height - 2}
                 textAnchor="middle"
-                style={{ fill: "var(--text-muted)", opacity: 0.8 }}
+                fill="rgba(95,126,153,0.8)"
                 fontSize="8"
               >
                 {point.day.label}

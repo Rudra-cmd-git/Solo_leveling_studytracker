@@ -28,7 +28,7 @@ export function GoalRing({ minutes, goal, percent }: GoalRingProps) {
           cy={SIZE / 2}
           r={RADIUS}
           fill="none"
-          style={{ stroke: "var(--accent2-a009)" }}
+          stroke="rgba(59,158,255,0.09)"
           strokeWidth={3}
         />
         <motion.circle
@@ -36,6 +36,7 @@ export function GoalRing({ minutes, goal, percent }: GoalRingProps) {
           cy={SIZE / 2}
           r={RADIUS}
           fill="none"
+          stroke="#54ddff"
           strokeWidth={4}
           strokeLinecap="round"
           strokeDasharray={CIRCUMFERENCE}
@@ -44,13 +45,10 @@ export function GoalRing({ minutes, goal, percent }: GoalRingProps) {
             strokeDashoffset: CIRCUMFERENCE * (1 - safePercent / 100),
           }}
           transition={{ duration: 1.6, ease: [0.16, 1, 0.3, 1] }}
-          style={{
-            stroke: "var(--accent)",
-            filter: "drop-shadow(0 0 7px var(--accent-a06))",
-          }}
+          style={{ filter: "drop-shadow(0 0 7px rgba(84,221,255,0.6))" }}
         />
       </svg>
-      <div className="absolute inset-[4px] rounded-full border border-[var(--accent-a028)] bg-[var(--bg-deep)]" />
+      <div className="absolute inset-[4px] rounded-full border border-[rgba(84,221,255,0.28)] bg-[#040b16]" />
       <div className="relative text-center">
         <p className="hud-label">Today</p>
         <CountUp

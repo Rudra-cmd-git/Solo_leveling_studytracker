@@ -30,9 +30,6 @@ export const settings = sqliteTable("settings", {
   onboarded: integer("onboarded", { mode: "boolean" })
     .notNull()
     .default(false),
-  cinematicSeen: integer("cinematic_seen", { mode: "boolean" })
-    .notNull()
-    .default(false),
 });
 
 export const subjects = sqliteTable(

@@ -64,8 +64,8 @@ export function NotificationSettings({
 
   const isSuccess = notifToast?.tone === "success";
   const toastClassName = isSuccess
-    ? "border-[rgb(var(--mint-rgb)/0.4)] bg-[rgb(var(--mint-rgb)/0.08)] text-mint"
-    : "border-[rgb(var(--danger-rgb)/0.4)] bg-[rgb(var(--danger-rgb)/0.08)] text-danger";
+    ? "border-[rgba(61,214,163,0.4)] bg-[rgba(61,214,163,0.08)] text-mint"
+    : "border-[rgba(255,84,104,0.4)] bg-[rgba(255,84,104,0.08)] text-[#ffb1bd]";
 
   return (
     <form onSubmit={handleNotificationSettings} className="space-y-4">

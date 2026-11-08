@@ -6,7 +6,6 @@ import { ProfileSettings } from "@/components/profile-settings";
 import { SubjectManager } from "@/components/subject-manager";
 import { SystemPanel } from "@/components/system-panel";
 import { NotificationSettings } from "@/components/notification-settings";
-import { OrientationSettings } from "@/components/orientation-settings";
 import { getAppData } from "@/lib/data";
 import { formatNumber } from "@/lib/utils";
 
@@ -26,8 +25,6 @@ export default async function SettingsPage() {
         description="Adjust your parameters. Changes are recorded locally and take effect immediately."
       />
 
-      <OrientationSettings cinematicSeen={Boolean(data.settings.cinematicSeen)} />
-
       <div className="grid items-start gap-5 lg:grid-cols-[1.05fr_0.95fr]">
         <ProfileSettings name={data.player.name} settings={data.settings} />
 
@@ -37,7 +34,7 @@ export default async function SettingsPage() {
         </div>
       </div>
 
-      <SystemPanel label="System alerts" className="boot-in boot-in-delay-2">
+            <SystemPanel label="System alerts" className="boot-in boot-in-delay-2">
         <NotificationSettings
           enabled={data.settings.notificationsEnabled}
           reminderTime={data.settings.reminderTime}
@@ -91,7 +88,7 @@ function CoreInfo({
   detail: string;
 }) {
   return (
-    <div className="border border-[var(--accent-a01)] bg-[var(--panel-a038)] px-3 py-3 transition-colors duration-200 hover:border-[var(--accent-a025)]">
+    <div className="border border-[rgba(84,221,255,0.1)] bg-[rgba(3,10,20,0.38)] px-3 py-3 transition-colors duration-200 hover:border-[rgba(84,221,255,0.25)]">
       <div className="flex items-center gap-1.5">
         <Icon className="h-3.5 w-3.5 text-glow/60" strokeWidth={1.6} />
         <p className="hud-label">{label}</p>

@@ -105,7 +105,7 @@ export function SubjectManager({
             return (
               <div
                 key={subject.id}
-                className="flex items-center gap-2.5 border border-[var(--accent-a01)] bg-[var(--panel-a038)] px-3 py-2.5"
+                className="flex items-center gap-2.5 border border-[rgba(84,221,255,0.1)] bg-[rgba(3,10,20,0.38)] px-3 py-2.5"
               >
                 <span
                   className="h-2.5 w-2.5 shrink-0 rotate-45"
@@ -125,9 +125,9 @@ export function SubjectManager({
                   onClick={() => remove(subject)}
                   disabled={deletingId === subject.id || isPending}
                   className={cn(
-                    "icon-button h-7 w-7 border-[var(--accent-a01)]",
+                    "icon-button h-7 w-7 border-[rgba(84,221,255,0.1)]",
                     count === 0
-                      ? "hover:border-[rgb(var(--danger-rgb)/0.5)] hover:text-danger"
+                      ? "hover:border-[rgba(255,84,104,0.5)] hover:text-[#ffadb8]"
                       : "opacity-40",
                   )}
                   aria-label={`Delete ${subject.name}`}
@@ -148,7 +148,7 @@ export function SubjectManager({
           })}
         </div>
 
-        <form onSubmit={add} className="mt-4 border-t border-[var(--accent-a01)] pt-4">
+        <form onSubmit={add} className="mt-4 border-t border-[rgba(84,221,255,0.1)] pt-4">
           <label htmlFor="new-subject" className="hud-label mb-1.5 block">
             New subject
           </label>

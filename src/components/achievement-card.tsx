@@ -17,8 +17,8 @@ export function AchievementCard({
         "achievement-card relative border transition-colors",
         compact ? "p-2.5" : "p-3.5",
         achievement.earned
-          ? "border-[rgb(var(--gold-rgb)/0.26)] bg-[rgb(var(--gold-rgb)/0.045)]"
-          : "border-[var(--accent-a01)] bg-[var(--panel-a038)]",
+          ? "border-[rgba(255,191,90,0.26)] bg-[rgba(255,191,90,0.045)]"
+          : "border-[rgba(84,221,255,0.1)] bg-[rgba(3,10,20,0.38)]",
       )}
     >
       <div className="flex items-start gap-3">
@@ -26,8 +26,8 @@ export function AchievementCard({
           className={cn(
             "grid h-10 w-10 shrink-0 place-items-center border",
             achievement.earned
-              ? "border-[rgb(var(--gold-rgb)/0.36)] bg-[rgb(var(--gold-rgb)/0.08)] text-gold"
-              : "border-[var(--accent-a012)] bg-[var(--accent-a003)] text-muted",
+              ? "border-[rgba(255,191,90,0.36)] bg-[rgba(255,191,90,0.08)] text-gold"
+              : "border-[rgba(84,221,255,0.12)] bg-[rgba(84,221,255,0.03)] text-muted",
           )}
         >
           {achievement.earned ? (
@@ -58,7 +58,7 @@ export function AchievementCard({
             <div className="mt-2">
               <div className="stat-track">
                 <AnimatedBar
-                  className="stat-fill bg-gradient-to-r from-[var(--accent-deep)] to-[var(--accent-a07)]"
+                  className="stat-fill bg-gradient-to-r from-[#2d6fa8] to-[#54ddff]/70"
                   percent={achievement.percent}
                 />
               </div>

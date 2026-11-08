@@ -100,7 +100,7 @@ export function SoundLab() {
                 max={100}
                 value={volume}
                 onChange={(event) => setVolume(Number(event.target.value))}
-                className="w-full cursor-pointer accent-[var(--accent)]"
+                className="w-full cursor-pointer accent-[#54ddff]"
               />
               <Waves className="h-4 w-4 shrink-0 text-muted" />
             </div>
@@ -134,13 +134,13 @@ export function SoundLab() {
             >
               <div className="mb-2 flex items-center gap-2">
                 <span className="korean-accent">{category.korean}</span>
-                <span className="h-px flex-1 bg-[var(--accent-a008)]" />
+                <span className="h-px flex-1 bg-[rgba(84,221,255,0.08)]" />
               </div>
               <p className="mb-3 text-[0.66rem] leading-relaxed text-muted">
                 {category.description}
               </p>
 
-              <div className="divide-y divide-[var(--accent-a008)]">
+              <div className="divide-y divide-[rgba(84,221,255,0.08)]">
                 {cues.map(([key, definition]) => {
                   const isAmbience = category.id === "ambience";
                   const isActive = ambienceKey === key;
@@ -164,7 +164,7 @@ export function SoundLab() {
                         className={cn(
                           "icon-button h-9 w-9 shrink-0",
                           (isFlashing || isActive) &&
-                            "border-[var(--accent-a072)] text-glow shadow-[0_0_14px_var(--accent-a018)]",
+                            "border-[rgba(84,221,255,0.72)] text-glow shadow-[0_0_14px_rgba(84,221,255,0.18)]",
                         )}
                       >
                         {isAmbience && isActive ? (
@@ -182,7 +182,7 @@ export function SoundLab() {
                             {definition.label}
                           </p>
                           {isAmbience && isActive ? (
-                            <span className="border border-[var(--accent-a04)] px-1.5 py-0.5 font-mono text-[0.5rem] tracking-widest text-glow">
+                            <span className="border border-[rgba(84,221,255,0.4)] px-1.5 py-0.5 font-mono text-[0.5rem] tracking-widest text-glow">
                               LIVE
                             </span>
                           ) : null}
@@ -222,8 +222,8 @@ export function SoundLab() {
               type="button"
               onClick={() => playCombo(combo.id)}
               className={cn(
-                "group flex items-start gap-3 border border-[var(--accent-a012)] bg-[var(--panel-a038)] p-3 text-left transition-colors hover:border-[var(--accent-a034)] hover:bg-[var(--accent2-a006)]",
-                lastPlayed === combo.id && "border-[var(--accent-a05)]",
+                "group flex items-start gap-3 border border-[rgba(84,221,255,0.12)] bg-[rgba(3,10,20,0.38)] p-3 text-left transition-colors hover:border-[rgba(84,221,255,0.34)] hover:bg-[rgba(59,158,255,0.06)]",
+                lastPlayed === combo.id && "border-[rgba(84,221,255,0.5)]",
               )}
             >
               <span className="icon-button h-9 w-9 shrink-0">
@@ -249,7 +249,7 @@ export function SoundLab() {
           used under the Mixkit Sound Effects Free License; see{" "}
           <a
             href="/audio/SOURCES.md"
-            className="text-glow/80 underline decoration-[var(--accent-a03)] underline-offset-2 hover:text-glow"
+            className="text-glow/80 underline decoration-[rgba(84,221,255,0.3)] underline-offset-2 hover:text-glow"
           >
             audio sources
           </a>

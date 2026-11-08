@@ -8,12 +8,12 @@ export function SystemLoader({ label = "Accessing System" }: { label?: string })
     <div className="system-panel relative flex min-h-40 items-center gap-5 overflow-hidden p-5">
       <div className="relative grid h-16 w-16 shrink-0 place-items-center">
         <motion.span
-          className="absolute inset-0 rounded-full border border-dashed border-[var(--accent-a035)]"
+          className="absolute inset-0 rounded-full border border-dashed border-[rgba(84,221,255,0.35)]"
           animate={{ rotate: 360 }}
           transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
         />
         <motion.span
-          className="absolute inset-1.5 rounded-full border border-[var(--accent2-a022)] border-t-glow"
+          className="absolute inset-1.5 rounded-full border border-[rgba(59,158,255,0.22)] border-t-glow"
           animate={{ rotate: -360 }}
           transition={{ duration: 2.6, repeat: Infinity, ease: "linear" }}
         />
@@ -30,7 +30,7 @@ export function SystemLoader({ label = "Accessing System" }: { label?: string })
         <p className="mt-1 text-xs text-muted">
           Synchronizing hunter record...
         </p>
-        <div className="mt-3 h-0.5 w-full overflow-hidden bg-[var(--accent-a01)]">
+        <div className="mt-3 h-0.5 w-full overflow-hidden bg-[rgba(84,221,255,0.1)]">
           <motion.div
             className="h-full w-1/3 bg-gradient-to-r from-transparent via-glow to-transparent"
             animate={{ x: ["-120%", "360%"] }}
@@ -39,7 +39,7 @@ export function SystemLoader({ label = "Accessing System" }: { label?: string })
         </div>
       </div>
 
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--accent-a065)] to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[rgba(84,221,255,0.65)] to-transparent" />
     </div>
   );
 }

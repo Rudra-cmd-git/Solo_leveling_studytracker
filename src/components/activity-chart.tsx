@@ -50,7 +50,7 @@ export function ActivityChart({
                 {day.minutes > 0 ? formatMinutes(day.minutes) : ""}
               </span>
               <div className="relative flex h-32 w-full items-end justify-center">
-                <div className="absolute inset-x-0 bottom-0 h-px bg-[var(--accent-a01)]" />
+                <div className="absolute inset-x-0 bottom-0 h-px bg-[rgba(84,221,255,0.1)]" />
                 <div
                   className={cn(
                     "bar-mark bar-rise w-full max-w-8",
@@ -64,7 +64,7 @@ export function ActivityChart({
                   title={`${formatMinutes(day.minutes)} on ${day.date}`}
                 />
                 {isToday ? (
-                  <span className="absolute -top-0.5 left-1/2 h-1 w-1 -translate-x-1/2 rotate-45 bg-glow shadow-[0_0_6px_var(--accent)]" />
+                  <span className="absolute -top-0.5 left-1/2 h-1 w-1 -translate-x-1/2 rotate-45 bg-glow shadow-[0_0_6px_#54ddff]" />
                 ) : null}
               </div>
               <span

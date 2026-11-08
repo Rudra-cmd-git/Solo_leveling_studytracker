@@ -136,7 +136,6 @@ export interface SettingsData {
   notificationsEnabled: boolean;
   reminderTime: string;
   onboarded: boolean;
-  cinematicSeen: boolean;
 }
 
 export interface StreakInfo {
@@ -181,7 +180,6 @@ export interface ShellData {
   name: string;
   progress: ProgressInfo;
   onboarded: boolean;
-  cinematicSeen: boolean;
   soundEnabled?: boolean;
 }
 

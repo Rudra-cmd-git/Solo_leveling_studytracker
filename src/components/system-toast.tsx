@@ -14,9 +14,9 @@ export interface ToastState {
 }
 
 const toneStyles: Record<ToastTone, string> = {
-  system: "border-[var(--accent-a038)]",
-  success: "border-[rgb(var(--mint-rgb)/0.42)]",
-  danger: "border-[rgb(var(--danger-rgb)/0.45)]",
+  system: "border-[rgba(84,221,255,0.38)]",
+  success: "border-[rgba(61,214,163,0.42)]",
+  danger: "border-[rgba(255,84,104,0.45)]",
 };
 
 const toneText: Record<ToastTone, string> = {

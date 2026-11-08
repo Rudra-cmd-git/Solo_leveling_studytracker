@@ -11,29 +11,29 @@ const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 const LEVEL_STYLES = [
   {
-    background: "var(--accent2-a0035)",
-    borderColor: "var(--accent-a006)",
+    background: "rgba(59,158,255,0.035)",
+    borderColor: "rgba(84,221,255,0.06)",
     boxShadow: "none",
   },
   {
-    background: "var(--accent2-a018)",
-    borderColor: "var(--accent-a012)",
+    background: "rgba(59,158,255,0.18)",
+    borderColor: "rgba(84,221,255,0.12)",
     boxShadow: "none",
   },
   {
-    background: "var(--accent2-a034)",
-    borderColor: "var(--accent-a02)",
+    background: "rgba(59,158,255,0.34)",
+    borderColor: "rgba(84,221,255,0.2)",
     boxShadow: "none",
   },
   {
-    background: "var(--accent-a055)",
-    borderColor: "var(--accent-a032)",
-    boxShadow: "0 0 6px var(--accent-a018)",
+    background: "rgba(84,221,255,0.55)",
+    borderColor: "rgba(84,221,255,0.32)",
+    boxShadow: "0 0 6px rgba(84,221,255,0.18)",
   },
   {
-    background: "var(--accent)",
-    borderColor: "rgb(var(--ice-rgb) / 0.45)",
-    boxShadow: "0 0 9px var(--accent-a044)",
+    background: "#54ddff",
+    borderColor: "rgba(174,234,255,0.45)",
+    boxShadow: "0 0 9px rgba(84,221,255,0.44)",
   },
 ];
 
@@ -135,7 +135,7 @@ export function StudyCalendar({
           <button
             type="button"
             onClick={goToToday}
-            className="icon-button h-7 w-auto border-[var(--accent-a016)] px-2 text-[0.55rem] tracking-[0.1em] uppercase"
+            className="icon-button h-7 w-auto border-[rgba(84,221,255,0.16)] px-2 text-[0.55rem] tracking-[0.1em] uppercase"
             aria-label="Go to current month"
           >
             Today
@@ -143,7 +143,7 @@ export function StudyCalendar({
           <button
             type="button"
             onClick={() => shiftMonth(-1)}
-            className="icon-button h-7 w-7 border-[var(--accent-a016)]"
+            className="icon-button h-7 w-7 border-[rgba(84,221,255,0.16)]"
             aria-label="Previous month"
           >
             <ChevronLeft className="h-3.5 w-3.5" />
@@ -151,7 +151,7 @@ export function StudyCalendar({
           <button
             type="button"
             onClick={() => shiftMonth(1)}
-            className="icon-button h-7 w-7 border-[var(--accent-a016)]"
+            className="icon-button h-7 w-7 border-[rgba(84,221,255,0.16)]"
             aria-label="Next month"
           >
             <ChevronRight className="h-3.5 w-3.5" />
@@ -185,7 +185,7 @@ export function StudyCalendar({
               title={`${dateKey} · ${formatMinutes(minutes)}`}
               className={cn(
                 "relative flex aspect-square min-h-9 flex-col items-center justify-center border text-[0.62rem] font-mono transition-colors",
-                level >= 3 ? "text-void" : "text-mist",
+                level >= 3 ? "text-[#021019]" : "text-mist",
                 isToday && "ring-1 ring-white/50",
               )}
               style={style}
@@ -197,7 +197,7 @@ export function StudyCalendar({
                 <span
                   className={cn(
                     "mt-0.5 text-[0.44rem] leading-none",
-                    level >= 3 ? "text-void/80" : "text-muted",
+                    level >= 3 ? "text-[#021019]/80" : "text-muted",
                   )}
                 >
                   {minutes >= 60
@@ -210,7 +210,7 @@ export function StudyCalendar({
         })}
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-[var(--accent-a008)] pt-3">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-[rgba(84,221,255,0.08)] pt-3">
         <span className="flex items-center gap-1.5 text-[0.56rem] tracking-[0.12em] text-muted uppercase">
           <CalendarDays className="h-3 w-3" /> Monthly record
         </span>

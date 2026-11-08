@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { Rank } from "@/lib/types";
 
 interface Particle {
   x: number;
@@ -14,28 +13,7 @@ interface Particle {
   color: string;
 }
 
-const RANK_ATMOSPHERE: Record<
-  Rank,
-  { count: number; speed: number; glow: number; drift: number }
-> = {
-  E: { count: 16, speed: 0.32, glow: 0, drift: 0.16 },
-  D: { count: 28, speed: 0.46, glow: 6, drift: 0.28 },
-  C: { count: 42, speed: 0.56, glow: 8, drift: 0.4 },
-  B: { count: 54, speed: 0.72, glow: 11, drift: 0.55 },
-  A: { count: 50, speed: 0.62, glow: 13, drift: 0.45 },
-  S: { count: 66, speed: 0.88, glow: 12, drift: 0.7 },
-};
-
-function readTriplet(
-  styles: CSSStyleDeclaration,
-  name: string,
-  fallback: string,
-) {
-  const value = styles.getPropertyValue(name).trim();
-  return value || fallback;
-}
-
-export function BattlefieldAtmosphere({ rank }: { rank: Rank }) {
+export function BattlefieldAtmosphere() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -44,18 +22,6 @@ export function BattlefieldAtmosphere({ rank }: { rank: Rank }) {
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-
-    const styles = getComputedStyle(document.documentElement);
-    const accent = readTriplet(styles, "--accent-rgb", "84 221 255");
-    const accent2 = readTriplet(styles, "--accent2-rgb", "59 158 255");
-    const ice = readTriplet(styles, "--ice-rgb", "220 246 255");
-    const mist = readTriplet(styles, "--mist-rgb", "143 176 201");
-
-    // Palette follows the active rank theme.
-    const colors = [accent, accent2, ice, mist];
-
-    const atmosphere = RANK_ATMOSPHERE[rank];
-    const shadowColor = `rgb(${accent} / 0.7)`;
 
     let animationFrameId: number;
     let width = (canvas.width = window.innerWidth);
@@ -69,19 +35,26 @@ export function BattlefieldAtmosphere({ rank }: { rank: Rank }) {
 
     window.addEventListener("resize", handleResize);
 
+    // Solo Leveling Mana Colors: Cyan, Ice Blue, Monarch Purple, Shadow Blue
+    const colors = [
+      "rgba(84, 221, 255,",   // Cyan Mana
+      "rgba(59, 158, 255,",   // System Blue
+      "rgba(138, 92, 246,",   // Monarch Purple
+      "rgba(220, 246, 255,",  // Ice White
+    ];
+
+    const particleCount = 45;
     const particles: Particle[] = [];
 
-    for (let i = 0; i < atmosphere.count; i++) {
+    for (let i = 0; i < particleCount; i++) {
       particles.push({
         x: Math.random() * width,
         y: Math.random() * height,
         radius: Math.random() * 2 + 0.6,
-        speedY:
-          -(Math.random() * 0.7 + 0.25) * (atmosphere.speed / 0.56),
-        speedX: (Math.random() - 0.5) * atmosphere.drift,
-        alpha: Math.random() * 0.5 + 0.15,
-        fadeSpeed:
-          (Math.random() * 0.008 + 0.002) * (Math.random() > 0.5 ? 1 : -1),
+        speedY: -(Math.random() * 0.7 + 0.25),
+        speedX: (Math.random() - 0.5) * 0.4,
+        alpha: Math.random() * 0.6 + 0.2,
+        fadeSpeed: (Math.random() * 0.008 + 0.002) * (Math.random() > 0.5 ? 1 : -1),
         color: colors[Math.floor(Math.random() * colors.length)],
       });
     }
@@ -110,12 +83,9 @@ export function BattlefieldAtmosphere({ rank }: { rank: Rank }) {
 
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        const alpha = Math.max(0, Math.min(1, p.alpha));
-        ctx.fillStyle = `rgb(${p.color} / ${alpha})`;
-        if (atmosphere.glow > 0) {
-          ctx.shadowBlur = atmosphere.glow;
-          ctx.shadowColor = shadowColor;
-        }
+        ctx.fillStyle = `${p.color}${Math.max(0, Math.min(1, p.alpha))})`;
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = "rgba(84, 221, 255, 0.75)";
         ctx.fill();
         ctx.shadowBlur = 0;
       }
@@ -129,21 +99,20 @@ export function BattlefieldAtmosphere({ rank }: { rank: Rank }) {
       window.removeEventListener("resize", handleResize);
       cancelAnimationFrame(animationFrameId);
     };
-  }, [rank]);
+  }, []);
 
   return (
     <div
       aria-hidden="true"
-      data-rank={rank}
-      className="battlefield-atmosphere pointer-events-none fixed inset-0 z-0 overflow-hidden"
+      className="pointer-events-none fixed inset-0 z-0 overflow-hidden"
     >
-      {/* Rank-reactive battlefield mist */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,var(--accent2-a015),transparent)]" />
-      <div className="absolute bottom-0 left-0 right-0 h-[45vh] bg-gradient-to-t from-[var(--void-a04)] via-[var(--panel-a025)] to-transparent" />
-      <div className="absolute top-1/4 -left-48 h-96 w-96 rounded-full bg-[var(--accent-a004)] blur-[100px]" />
-      <div className="absolute bottom-1/3 -right-48 h-96 w-96 rounded-full bg-[var(--accent2-a006)] blur-[120px]" />
+      {/* Deep Shadow Monarch Battlefield Mist */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(59,158,255,0.15),rgba(2,5,11,0))]" />
+      <div className="absolute bottom-0 left-0 right-0 h-[45vh] bg-gradient-to-t from-[rgba(16,7,32,0.45)] via-[rgba(3,10,20,0.25)] to-transparent" />
+      <div className="absolute top-1/4 -left-48 h-96 w-96 rounded-full bg-[rgba(84,221,255,0.04)] blur-[100px]" />
+      <div className="absolute bottom-1/3 -right-48 h-96 w-96 rounded-full bg-[rgba(138,92,246,0.06)] blur-[120px]" />
 
-      {/* Floating mana embers */}
+      {/* Floating Mana Ember Canvas */}
       <canvas
         ref={canvasRef}
         className="absolute inset-0 h-full w-full opacity-85"

@@ -47,7 +47,7 @@ export function SubjectBreakdown({
                   {formatMinutes(subject.minutes)} · {Math.round(subject.percent)}%
                 </span>
               </div>
-              <div className="mt-1.5 h-1.5 border border-[var(--accent-a01)] bg-[rgb(var(--void-rgb)/0.8)]">
+              <div className="mt-1.5 h-1.5 border border-[rgba(84,221,255,0.1)] bg-[rgba(1,6,12,0.8)]">
                 <AnimatedBar
                   className="h-full"
                   percent={subject.percent}
