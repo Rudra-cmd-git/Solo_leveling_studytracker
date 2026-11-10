@@ -492,3 +492,6 @@ export async function getSubjects(): Promise<SubjectData[]> {
 export function getWeekDates(weekKey: string): string[] {
   return weekDates(weekKey);
 }
+
+// Re-export getPlayerId for pages that need to check auth status
+export { getPlayerId } from "./auth";

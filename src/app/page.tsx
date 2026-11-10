@@ -7,9 +7,13 @@ import {
   Swords,
   Timer,
   Trophy,
+  Shield,
+  Zap,
+  Target,
 } from "lucide-react";
-import { AchievementCard } from "@/components/achievement-card";
-import { ActivityChart } from "@/components/activity-chart";
+import { getAppData, getPlayerId } from "@/lib/data";
+import { longDate } from "@/lib/dates";
+import { formatNumber, progressUnit } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
 import { QuestCard } from "@/components/quest-card";
 import { SessionRow } from "@/components/session-row";
@@ -19,11 +23,119 @@ import { SystemPanel } from "@/components/system-panel";
 import { AnimatedBar } from "@/components/motion/animated-bar";
 import { CountUp } from "@/components/motion/count-up";
 import { GoalRing } from "@/components/motion/goal-ring";
-import { getAppData } from "@/lib/data";
-import { longDate } from "@/lib/dates";
-import { formatNumber, progressUnit } from "@/lib/utils";
+import { AchievementCard } from "@/components/achievement-card";
+import { ActivityChart } from "@/components/activity-chart";
 
 export default async function DashboardPage() {
+  const playerId = await getPlayerId();
+
+  // If not authenticated, show public landing page
+  if (!playerId) {
+    return (
+      <div className="space-y-5 sm:space-y-6">
+        <PageHeader
+          eyebrow="System // Awaken"
+          korean="각성"
+          title="The System Awaits"
+          description="A Solo Leveling-inspired study tracker. Log focus sessions, earn XP, complete quests, and rise from E-Rank to S-Rank Sovereign."
+          action={
+            <div className="flex gap-3">
+              <Link href="/login" className="system-button system-button--secondary">
+                <Shield className="h-4 w-4" />
+                Sign In
+              </Link>
+              <Link href="/login?mode=signup" className="system-button">
+                <Zap className="h-4 w-4" />
+                Awaken Now
+              </Link>
+            </div>
+          }
+        />
+
+        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          <SystemPanel label="Focus Timer" className="flex flex-col">
+            <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center">
+              <div className="h-20 w-20 flex items-center justify-center border border-[rgba(84,221,255,0.2)] bg-[rgba(59,158,255,0.06)]">
+                <Timer className="h-10 w-10 text-glow" />
+              </div>
+              <div>
+                <h3 className="hud-label hud-label--bright">Pomodoro Sessions</h3>
+                <p className="mt-1 text-sm text-muted">
+                  25-min focus cycles with automatic break tracking
+                </p>
+              </div>
+            </div>
+            <Link href="/login" className="system-button w-full">
+              <Flame className="h-4 w-4" />
+              Start Your First Session
+            </Link>
+          </SystemPanel>
+
+          <SystemPanel label="Quest System" className="flex flex-col">
+            <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center">
+              <div className="h-20 w-20 flex items-center justify-center border border-[rgba(255,184,77,0.2)] bg-[rgba(255,184,77,0.06)]">
+                <Swords className="h-10 w-10 text-[#ffb84d]" />
+              </div>
+              <div>
+                <h3 className="hud-label hud-label--bright">Daily & Weekly Quests</h3>
+                <p className="mt-1 text-sm text-muted">
+                  Structured objectives with XP rewards
+                </p>
+              </div>
+            </div>
+            <Link href="/login" className="system-button system-button--secondary w-full">
+              View Quest Log
+            </Link>
+          </SystemPanel>
+
+          <SystemPanel label="Progression" className="flex flex-col">
+            <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center">
+              <div className="h-20 w-20 flex items-center justify-center border border-[rgba(255,91,114,0.2)] bg-[rgba(255,91,114,0.06)]">
+                <Trophy className="h-10 w-10 text-[#ff5b72]" />
+              </div>
+              <div>
+                <h3 className="hud-label hud-label--bright">Ranks E → S</h3>
+                <p className="mt-1 text-sm text-muted">
+                  Level up, unlock attributes, become a Sovereign
+                </p>
+              </div>
+            </div>
+            <Link href="/login" className="system-button w-full">
+              <Target className="h-4 w-4" />
+              Begin Your Journey
+            </Link>
+          </SystemPanel>
+        </div>
+
+        <SystemPanel label="Features" className="boot-in">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <FeatureCard icon={Flame} title="Focus Timer" desc="Presets, Pomodoro, manual logging, session review" />
+            <FeatureCard icon={Swords} title="Quest System" desc="Daily/weekly quests, subject-specific, streak freezes" />
+            <FeatureCard icon={Sparkles} title="XP & Ranks" desc="Escalating curve, 6 ranks, attribute system (INT/FOC/DIS/VIT/PER)" />
+            <FeatureCard icon={Shield} title="Streaks & Achievements" desc="Daily chains, weekly freeze, 13 unlockable achievements" />
+          </div>
+        </SystemPanel>
+
+        <div className="text-center pt-4 border-t border-[rgba(84,221,255,0.1)]">
+          <p className="text-sm text-muted">
+            No account? The System creates your hunter record on first sign-in.
+          </p>
+          <div className="mt-4 flex justify-center gap-3">
+            <Link href="/login?mode=signup" className="system-button">
+              <Zap className="h-4 w-4" />
+              Create Free Account
+            </Link>
+            <Link href="/login" className="system-button system-button--secondary">
+              <Shield className="h-4 w-4" />
+              Sign In
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Authenticated: show full dashboard
   const data = await getAppData();
   const goalPercent = Math.min(
     100,
@@ -220,6 +332,26 @@ export default async function DashboardPage() {
           </Link>
         </SystemPanel>
       </div>
+    </div>
+  );
+}
+
+function FeatureCard({
+  icon: Icon,
+  title,
+  desc,
+}: {
+  icon: React.ElementType;
+  title: string;
+  desc: string;
+}) {
+  return (
+    <div className="group flex flex-col gap-3 border border-[rgba(84,221,255,0.12)] bg-[#030812]/60 p-4 transition hover:border-[rgba(84,221,255,0.3)] hover:bg-[#030812]/80">
+      <div className="h-10 w-10 flex items-center justify-center border border-[rgba(84,221,255,0.2)] bg-[rgba(59,158,255,0.06)]">
+        <Icon className="h-5 w-5 text-glow" />
+      </div>
+      <h3 className="hud-label hud-label--bright">{title}</h3>
+      <p className="text-sm text-muted">{desc}</p>
     </div>
   );
 }
