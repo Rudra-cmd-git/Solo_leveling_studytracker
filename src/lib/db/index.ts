@@ -234,12 +234,16 @@ const DEFAULT_ACHIEVEMENTS = [
 const SCHEMA_STATEMENTS = [
   `CREATE TABLE IF NOT EXISTS players (
     id INTEGER PRIMARY KEY,
+    supabase_user_id TEXT UNIQUE,
+    email TEXT,
+    avatar_url TEXT,
     name TEXT NOT NULL DEFAULT 'Hunter',
     total_xp INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL
   )`,
   `CREATE TABLE IF NOT EXISTS settings (
     id INTEGER PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES players(id),
     daily_goal_minutes INTEGER NOT NULL DEFAULT 60,
     default_timer_minutes INTEGER NOT NULL DEFAULT 25,
     timezone TEXT NOT NULL DEFAULT 'Asia/Kolkata',
@@ -249,15 +253,18 @@ const SCHEMA_STATEMENTS = [
     reminder_time TEXT NOT NULL DEFAULT '18:00',
     onboarded INTEGER NOT NULL DEFAULT 0
   )`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS settings_user_idx ON settings (user_id)`,
   `CREATE TABLE IF NOT EXISTS subjects (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES players(id),
     name TEXT NOT NULL,
     color TEXT NOT NULL DEFAULT '#43a9ff',
     created_at TEXT NOT NULL
   )`,
-  "CREATE UNIQUE INDEX IF NOT EXISTS subjects_name_idx ON subjects (name)",
+  `CREATE UNIQUE INDEX IF NOT EXISTS subjects_user_name_idx ON subjects (user_id, name)`,
   `CREATE TABLE IF NOT EXISTS sessions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES players(id),
     subject_id INTEGER NOT NULL REFERENCES subjects(id),
     topic TEXT NOT NULL,
     notes TEXT NOT NULL DEFAULT '',
@@ -267,7 +274,7 @@ const SCHEMA_STATEMENTS = [
     studied_at TEXT NOT NULL,
     created_at TEXT NOT NULL
   )`,
-  "CREATE INDEX IF NOT EXISTS sessions_studied_at_idx ON sessions (studied_at)",
+  `CREATE INDEX IF NOT EXISTS sessions_user_studied_idx ON sessions (user_id, studied_at)`,
   `CREATE TABLE IF NOT EXISTS quests (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     code TEXT NOT NULL,
@@ -284,12 +291,13 @@ const SCHEMA_STATEMENTS = [
   "CREATE UNIQUE INDEX IF NOT EXISTS quests_code_idx ON quests (code)",
   `CREATE TABLE IF NOT EXISTS quest_claims (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES players(id),
     quest_id INTEGER NOT NULL REFERENCES quests(id) ON DELETE CASCADE,
     period_key TEXT NOT NULL,
     claimed_at TEXT NOT NULL
   )`,
-  `CREATE UNIQUE INDEX IF NOT EXISTS quest_claims_unique_idx
-    ON quest_claims (quest_id, period_key)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS quest_claims_user_quest_period_idx
+    ON quest_claims (user_id, quest_id, period_key)`,
   `CREATE TABLE IF NOT EXISTS achievements (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     code TEXT NOT NULL,
@@ -304,24 +312,37 @@ const SCHEMA_STATEMENTS = [
   "CREATE UNIQUE INDEX IF NOT EXISTS achievements_code_idx ON achievements (code)",
   `CREATE TABLE IF NOT EXISTS player_achievements (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES players(id),
     achievement_id INTEGER NOT NULL REFERENCES achievements(id) ON DELETE CASCADE,
     unlocked_at TEXT NOT NULL
   )`,
-  `CREATE UNIQUE INDEX IF NOT EXISTS player_achievements_unique_idx
-    ON player_achievements (achievement_id)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS player_achievements_user_achievement_idx
+    ON player_achievements (user_id, achievement_id)`,
   `CREATE TABLE IF NOT EXISTS streak_freezes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES players(id),
     date_key TEXT NOT NULL,
     created_at TEXT NOT NULL
   )`,
-  "CREATE UNIQUE INDEX IF NOT EXISTS streak_freezes_date_idx ON streak_freezes (date_key)",
+  `CREATE UNIQUE INDEX IF NOT EXISTS streak_freezes_user_date_idx ON streak_freezes (user_id, date_key)`,
 ];
 
 const MIGRATION_STATEMENTS = [
+  // Existing migrations
   "ALTER TABLE settings ADD COLUMN xp_bonuses_enabled INTEGER NOT NULL DEFAULT 0",
   "ALTER TABLE settings ADD COLUMN notifications_enabled INTEGER NOT NULL DEFAULT 0",
   "ALTER TABLE settings ADD COLUMN reminder_time TEXT NOT NULL DEFAULT '18:00'",
   "ALTER TABLE quests ADD COLUMN subject_id INTEGER REFERENCES subjects(id)",
+  // New multi-user migrations
+  "ALTER TABLE players ADD COLUMN supabase_user_id TEXT UNIQUE",
+  "ALTER TABLE players ADD COLUMN email TEXT",
+  "ALTER TABLE players ADD COLUMN avatar_url TEXT",
+  "ALTER TABLE settings ADD COLUMN user_id INTEGER REFERENCES players(id)",
+  "ALTER TABLE subjects ADD COLUMN user_id INTEGER REFERENCES players(id)",
+  "ALTER TABLE sessions ADD COLUMN user_id INTEGER REFERENCES players(id)",
+  "ALTER TABLE quest_claims ADD COLUMN user_id INTEGER REFERENCES players(id)",
+  "ALTER TABLE player_achievements ADD COLUMN user_id INTEGER REFERENCES players(id)",
+  "ALTER TABLE streak_freezes ADD COLUMN user_id INTEGER REFERENCES players(id)",
 ];
 
 async function runMigrations(client: Client): Promise<void> {
@@ -383,21 +404,9 @@ async function initializeSchema(client: Client): Promise<void> {
 
   const now = new Date().toISOString();
 
+  // Only seed global templates (quests and achievements)
+  // Users, settings, subjects are created per-user on signup via ensurePlayer()
   const seedStatements = [
-    {
-      sql: "INSERT OR IGNORE INTO players (id, name, total_xp, created_at) VALUES (1, 'Hunter', 0, ?)",
-      args: [now],
-    },
-    {
-      sql: `INSERT OR IGNORE INTO settings
-        (id, daily_goal_minutes, default_timer_minutes, timezone, sound_enabled, xp_bonuses_enabled, onboarded)
-        VALUES (1, 60, 25, 'Asia/Kolkata', 1, 0, 0)`,
-      args: [],
-    },
-    ...DEFAULT_SUBJECTS.map((subject) => ({
-      sql: "INSERT OR IGNORE INTO subjects (name, color, created_at) VALUES (?, ?, ?)",
-      args: [subject.name, subject.color, now],
-    })),
     ...DEFAULT_QUESTS.map((quest) => ({
       sql: `INSERT OR IGNORE INTO quests
         (code, title, description, metric, period, target, xp_reward, active, sort_order, subject_id)

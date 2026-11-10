@@ -8,6 +8,7 @@ import { MotionProvider } from "@/components/motion/motion-provider";
 import { OnboardingGate } from "@/components/onboarding-gate";
 import { SoundProvider } from "@/components/sound-provider";
 import { getSettingsData, getShellData } from "@/lib/data";
+import { redirect } from "next/navigation";
 import "./globals.css";
 
 const cinzel = Cinzel({
@@ -42,9 +43,30 @@ export const viewport: Viewport = {
   colorScheme: "dark",
 };
 
-export default async function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
   const shell = await getShellData();
-  const settings = await getSettingsData();
+  const settings = shell ? await getSettingsData() : null;
+
+  // If no shell (unauthenticated), show a minimal layout without app shell
+  if (!shell || !settings) {
+    return (
+      <html
+        lang="en"
+        className={`${cinzel.variable} ${rajdhani.variable} ${jetbrainsMono.variable}`}
+      >
+        <body className="bg-[#050810] min-h-screen">
+          <BattlefieldAtmosphere />
+          <MotionProvider>
+            {children}
+          </MotionProvider>
+        </body>
+      </html>
+    );
+  }
 
   return (
     <html

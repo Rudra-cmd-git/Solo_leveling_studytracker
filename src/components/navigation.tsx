@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { RankBadge } from "./rank-badge";
 import { SoundToggle } from "./sound-toggle";
 import { SystemSigil } from "./system-sigil";
+import { UserMenu } from "./user-menu";
 import { XpBar } from "./xp-bar";
 
 interface NavigationItem {
@@ -156,6 +157,9 @@ export function SideNavigation({ shell }: { shell: ShellData }) {
                 ? "MAX"
                 : `${shell.progress.rank.minLevel + (shell.progress.rank.rank === "E" ? 9 : 10)} LV`}
             </span>
+          </div>
+          <div className="mt-4 pt-4 border-t border-[rgba(84,221,255,0.12)]">
+            <UserMenu />
           </div>
         </div>
       </div>

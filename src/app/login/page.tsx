@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@/utils/supabase/client";
+import { createClient } from "@/lib/supabase/client";
+import { useRouter, useSearchParams } from "next/navigation";
 
 type Mode = "signup" | "login";
 
@@ -9,58 +10,45 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [mode, setMode] = useState<Mode>("login");
-  const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [session, setSession] = useState<string | null>(null);
-  const supabase = createClient();
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
+  // Check for error from auth callback
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session?.user.email ?? null);
-    });
-  }, [supabase.auth]);
+    const authError = searchParams.get("error");
+    if (authError === "auth_failed") {
+      setError("Authentication failed. Please try again.");
+    }
+  }, [searchParams]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    setMessage(null);
     setLoading(true);
+
+    const supabase = createClient();
 
     try {
       if (mode === "signup") {
-        const { data, error } = await supabase.auth.signUp({ email, password });
+        const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
-        if (data.session) {
-          setSession(data.session?.user.email ?? null);
-          setMessage("Sign up successful! You are logged in.");
-        } else {
-          setMessage(
-            "Registration complete. Confirm your identity via the link sent to your email.",
-          );
-        }
+        setError("Check your email to confirm your account!");
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (error) throw error;
-        setSession(email);
+        router.push("/focus");
+        router.refresh();
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error occurred");
     } finally {
       setLoading(false);
     }
-  }
-
-  async function handleLogout() {
-    setLoading(true);
-    setError(null);
-    const { error } = await supabase.auth.signOut();
-    if (error) setError(error.message);
-    setSession(null);
-    setLoading(false);
   }
 
   return (
@@ -89,103 +77,78 @@ export default function LoginPage() {
                 : "Enter your credentials to accept the awakening."}
             </p>
 
-            {/* Session banner (logged out) */}
-            {session && (
-              <div className="mt-4 rounded border border-[#2b6cff]/40 bg-[#0f1a3d]/60 px-4 py-3 text-center font-mono text-sm text-[#6ea8ff]">
-                Session active: {session}
-                <button
-                  onClick={handleLogout}
-                  disabled={loading}
-                  className="mt-2 block w-full rounded border border-[#ff4d4d]/60 px-3 py-1.5 font-mono text-xs tracking-widest text-[#ff8080] uppercase transition hover:bg-[#ff4d4d]/10 disabled:opacity-50"
-                >
-                  {loading ? "..." : "Log Out"}
-                </button>
-              </div>
-            )}
-
             {/* Auth form */}
-            {!session && (
-              <form onSubmit={handleSubmit} className="mt-6 space-y-5">
-                <div>
-                  <label
-                    htmlFor="email"
-                    className="mb-1.5 block font-mono text-xs tracking-widest text-[#6ea8ff] uppercase"
-                  >
-                    &gt; Player ID (Email)
-                  </label>
-                  <input
-                    id="email"
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="hunter@association.com"
-                    className="w-full rounded border border-[#2b6cff]/50 bg-[#050810] px-4 py-2.5 font-mono text-sm text-white placeholder-[#3d5490] outline-none transition focus:border-[#2b6cff] focus:shadow-[0_0_12px_rgba(43,108,255,0.35)]"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="password"
-                    className="mb-1.5 block font-mono text-xs tracking-widest text-[#6ea8ff] uppercase"
-                  >
-                    &gt; Access Key (Password)
-                  </label>
-                  <input
-                    id="password"
-                    type="password"
-                    required
-                    minLength={6}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full rounded border border-[#2b6cff]/50 bg-[#050810] px-4 py-2.5 font-mono text-sm text-white placeholder-[#3d5490] outline-none transition focus:border-[#2b6cff] focus:shadow-[0_0_12px_rgba(43,108,255,0.35)]"
-                  />
-                </div>
-
-                {error && (
-                  <p className="rounded border border-[#ff4d4d]/50 bg-[#3d0a0a]/60 px-4 py-2.5 font-mono text-xs text-[#ff8080]">
-                    [ERROR] {error}
-                  </p>
-                )}
-
-                {message && (
-                  <p className="rounded border border-[#2b6cff]/50 bg-[#0f1a3d]/60 px-4 py-2.5 font-mono text-xs text-[#6ea8ff]">
-                    [SYSTEM] {message}
-                  </p>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full rounded border-2 border-[#2b6cff]/70 bg-[#0f2a6e]/60 px-4 py-3 font-mono text-sm font-bold tracking-[0.25em] text-white uppercase transition hover:bg-[#1a3fa0]/70 hover:shadow-[0_0_20px_rgba(43,108,255,0.5)] disabled:cursor-not-allowed disabled:opacity-50"
+            <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+              <div>
+                <label
+                  htmlFor="email"
+                  className="mb-1.5 block font-mono text-xs tracking-widest text-[#6ea8ff] uppercase"
                 >
-                  {loading
-                    ? "Connecting..."
-                    : mode === "login"
-                      ? "Log In"
-                      : "Sign Up"}
-                </button>
-              </form>
-            )}
+                  {'>'} Player ID (Email)
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="hunter@association.com"
+                  className="w-full rounded border border-[#2b6cff]/50 bg-[#050810] px-4 py-2.5 font-mono text-sm text-white placeholder-[#3d5490] outline-none transition focus:border-[#2b6cff] focus:shadow-[0_0_12px_rgba(43,108,255,0.35)]"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="password"
+                  className="mb-1.5 block font-mono text-xs tracking-widest text-[#6ea8ff] uppercase"
+                >
+                  {'>'} Access Key (Password)
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  required
+                  minLength={6}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full rounded border border-[#2b6cff]/50 bg-[#050810] px-4 py-2.5 font-mono text-sm text-white placeholder-[#3d5490] outline-none transition focus:border-[#2b6cff] focus:shadow-[0_0_12px_rgba(43,108,255,0.35)]"
+                />
+              </div>
+
+              {error && (
+                <p className="rounded border border-[#ff4d4d]/50 bg-[#3d0a0a]/60 px-4 py-2.5 font-mono text-xs text-[#ff8080]">
+                  [ERROR] {error}
+                </p>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full rounded border-2 border-[#2b6cff]/70 bg-[#0f2a6e]/60 px-4 py-3 font-mono text-sm font-bold tracking-[0.25em] text-white uppercase transition hover:bg-[#1a3fa0]/70 hover:shadow-[0_0_20px_rgba(43,108,255,0.5)] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {loading
+                  ? "Connecting..."
+                  : mode === "login"
+                    ? "Log In"
+                    : "Sign Up"}
+              </button>
+            </form>
 
             {/* Mode toggle */}
-            {!session && (
-              <div className="mt-6 border-t border-[#2b6cff]/20 pt-4 text-center">
-                <button
-                  onClick={() => {
-                    setMode(mode === "login" ? "signup" : "login");
-                    setError(null);
-                    setMessage(null);
-                  }}
-                  className="font-mono text-xs tracking-widest text-[#6ea8ff] uppercase transition hover:text-white"
-                >
-                  {mode === "login"
-                    ? "No hunter record? [ Sign Up ]"
-                    : "Already awakened? [ Log In ]"}
-                </button>
-              </div>
-            )}
+            <div className="mt-6 border-t border-[#2b6cff]/20 pt-4 text-center">
+              <button
+                onClick={() => {
+                  setMode(mode === "login" ? "signup" : "login");
+                  setError(null);
+                }}
+                className="font-mono text-xs tracking-widest text-[#6ea8ff] uppercase transition hover:text-white"
+              >
+                {mode === "login"
+                  ? "No hunter record? [ Sign Up ]"
+                  : "Already awakened? [ Log In ]"}
+              </button>
+            </div>
           </div>
 
           {/* Corner accents */}

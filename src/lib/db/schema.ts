@@ -7,46 +7,64 @@ import {
 
 export const players = sqliteTable("players", {
   id: integer("id").primaryKey(),
+  supabaseUserId: text("supabase_user_id").unique(),
+  email: text("email"),
+  avatarUrl: text("avatar_url"),
   name: text("name").notNull().default("Hunter"),
   totalXp: integer("total_xp").notNull().default(0),
   createdAt: text("created_at").notNull(),
 });
 
-export const settings = sqliteTable("settings", {
-  id: integer("id").primaryKey(),
-  dailyGoalMinutes: integer("daily_goal_minutes").notNull().default(60),
-  defaultTimerMinutes: integer("default_timer_minutes").notNull().default(25),
-  timezone: text("timezone").notNull().default("Asia/Kolkata"),
-  soundEnabled: integer("sound_enabled", { mode: "boolean" })
-    .notNull()
-    .default(true),
-  xpBonusesEnabled: integer("xp_bonuses_enabled", { mode: "boolean" })
-    .notNull()
-    .default(false),
-  notificationsEnabled: integer("notifications_enabled", { mode: "boolean" })
-    .notNull()
-    .default(false),
-  reminderTime: text("reminder_time").notNull().default("18:00"),
-  onboarded: integer("onboarded", { mode: "boolean" })
-    .notNull()
-    .default(false),
-});
+export const settings = sqliteTable(
+  "settings",
+  {
+    id: integer("id").primaryKey(),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => players.id),
+    dailyGoalMinutes: integer("daily_goal_minutes").notNull().default(60),
+    defaultTimerMinutes: integer("default_timer_minutes").notNull().default(25),
+    timezone: text("timezone").notNull().default("Asia/Kolkata"),
+    soundEnabled: integer("sound_enabled", { mode: "boolean" })
+      .notNull()
+      .default(true),
+    xpBonusesEnabled: integer("xp_bonuses_enabled", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    notificationsEnabled: integer("notifications_enabled", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    reminderTime: text("reminder_time").notNull().default("18:00"),
+    onboarded: integer("onboarded", { mode: "boolean" })
+      .notNull()
+      .default(false),
+  },
+  (table) => [uniqueIndex("settings_user_idx").on(table.userId)],
+);
 
 export const subjects = sqliteTable(
   "subjects",
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => players.id),
     name: text("name").notNull(),
     color: text("color").notNull().default("#43a9ff"),
     createdAt: text("created_at").notNull(),
   },
-  (table) => [uniqueIndex("subjects_name_idx").on(table.name)],
+  (table) => [
+    uniqueIndex("subjects_user_name_idx").on(table.userId, table.name),
+  ],
 );
 
 export const sessions = sqliteTable(
   "sessions",
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => players.id),
     subjectId: integer("subject_id")
       .notNull()
       .references(() => subjects.id),
@@ -59,7 +77,7 @@ export const sessions = sqliteTable(
     createdAt: text("created_at").notNull(),
   },
   (table) => [
-    uniqueIndex("sessions_date_idx").on(table.id, table.studiedAt),
+    uniqueIndex("sessions_user_studied_idx").on(table.userId, table.studiedAt),
   ],
 );
 
@@ -85,16 +103,22 @@ export const streakFreezes = sqliteTable(
   "streak_freezes",
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => players.id),
     dateKey: text("date_key").notNull(),
     createdAt: text("created_at").notNull(),
   },
-  (table) => [uniqueIndex("streak_freezes_date_idx").on(table.dateKey)],
+  (table) => [uniqueIndex("streak_freezes_user_date_idx").on(table.userId, table.dateKey)],
 );
 
 export const questClaims = sqliteTable(
   "quest_claims",
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => players.id),
     questId: integer("quest_id")
       .notNull()
       .references(() => quests.id, { onDelete: "cascade" }),
@@ -102,7 +126,8 @@ export const questClaims = sqliteTable(
     claimedAt: text("claimed_at").notNull(),
   },
   (table) => [
-    uniqueIndex("quest_claims_unique_idx").on(
+    uniqueIndex("quest_claims_user_quest_period_idx").on(
+      table.userId,
       table.questId,
       table.periodKey,
     ),
@@ -129,13 +154,17 @@ export const playerAchievements = sqliteTable(
   "player_achievements",
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => players.id),
     achievementId: integer("achievement_id")
       .notNull()
       .references(() => achievements.id, { onDelete: "cascade" }),
     unlockedAt: text("unlocked_at").notNull(),
   },
   (table) => [
-    uniqueIndex("player_achievements_unique_idx").on(
+    uniqueIndex("player_achievements_user_achievement_idx").on(
+      table.userId,
       table.achievementId,
     ),
   ],
