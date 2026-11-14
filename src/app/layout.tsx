@@ -8,7 +8,6 @@ import { MotionProvider } from "@/components/motion/motion-provider";
 import { OnboardingGate } from "@/components/onboarding-gate";
 import { SoundProvider } from "@/components/sound-provider";
 import { getSettingsData, getShellData } from "@/lib/data";
-import { redirect } from "next/navigation";
 import "./globals.css";
 
 const cinzel = Cinzel({
